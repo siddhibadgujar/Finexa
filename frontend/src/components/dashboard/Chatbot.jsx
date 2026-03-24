@@ -60,10 +60,14 @@ const Chatbot = () => {
         console.log("Finexa Trigger Current Transcript:", transcript);
         
         const hasHey = transcript.includes('hey') || transcript.includes('hi') || transcript.includes('hello');
-        const hasFinexa = transcript.includes('finexa') || transcript.includes('phoenix') || transcript.includes('fine');
+        const hasFinexa = transcript.includes('finexa') || transcript.includes('phoenix') || transcript.includes('fine') || 
+                           transcript.includes('find') || transcript.includes('five') || transcript.includes('finance') ||
+                           transcript.includes('finish') || transcript.includes('assistant') || transcript.includes('buddy') ||
+                           transcript.includes('help');
         
-        if (hasFinexa || (hasHey && hasFinexa)) {
+        if (hasFinexa || (hasHey && (hasFinexa || transcript.includes('assistant') || transcript.includes('buddy')))) {
           console.log("Finexa: Wake word detected! Opening chat...");
+          window.alert("Voice Trigger Detected!"); // Explicit HUD debug
           playBeep();
           setIsOpen(true);
           stopTrigger();
@@ -240,7 +244,7 @@ const Chatbot = () => {
                 <h3 className="font-black text-lg">Finexa Assistant</h3>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Always Online</span>
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Always Online | v1.2</span>
                 </div>
               </div>
             </div>
