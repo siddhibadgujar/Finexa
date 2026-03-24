@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 
 const QuickActions = ({ onAddIncome, onAddExpense }) => {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       <button
@@ -11,7 +13,7 @@ const QuickActions = ({ onAddIncome, onAddExpense }) => {
         <div className="bg-white/20 p-2.5 rounded-xl group-hover:scale-110 transition-transform">
           <ArrowUpRight size={28} strokeWidth={3} />
         </div>
-        <span className="text-xl font-bold tracking-tight uppercase italic font-black">Received (+)</span>
+        <span className="text-xl font-bold tracking-tight uppercase italic font-black">{t('dashboard.quickActions.received')}</span>
       </button>
 
       <button
@@ -21,7 +23,7 @@ const QuickActions = ({ onAddIncome, onAddExpense }) => {
         <div className="bg-white/20 p-2.5 rounded-xl group-hover:scale-110 transition-transform">
           <ArrowDownRight size={28} strokeWidth={3} />
         </div>
-        <span className="text-xl font-bold tracking-tight uppercase italic font-black">Spent (-)</span>
+        <span className="text-xl font-bold tracking-tight uppercase italic font-black">{t('dashboard.quickActions.spent')}</span>
       </button>
     </div>
   );

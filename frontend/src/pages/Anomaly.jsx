@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { 
   RefreshCcw, AlertTriangle, CheckCircle, Loader2, TrendingUp, TrendingDown, 
   Info, ShieldAlert, Sparkles, BrainCircuit, Activity, Lightbulb, ArrowRight
@@ -7,6 +8,7 @@ import {
 import AnomalyChart from '../components/anomaly/AnomalyChart';
 
 const Anomaly = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState({
     anomalies: [],
     aiSummary: "",
@@ -123,7 +125,7 @@ const Anomaly = () => {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">Anomaly Command</h1>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">{t('anomaly.title')}</h1>
             <div className={`px-4 py-2 rounded-2xl border-2 font-black text-sm flex items-center gap-2 shadow-sm ${getRiskColor(data.riskLevel)}`}>
               <Activity size={18} />
               RISK: {data.riskScore}/100

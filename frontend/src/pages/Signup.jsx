@@ -14,6 +14,7 @@ const Signup = () => {
       const res = await axios.post('http://localhost:5555/api/auth/signup', formData);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
+      localStorage.setItem('lastActive', Date.now());
       localStorage.removeItem('business'); // Ensure new user starts with no business data
       navigate('/setup-business');
     } catch (err) {

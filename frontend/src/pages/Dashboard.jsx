@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { IndianRupee, TrendingDown, TrendingUp, Wallet, ArrowDown, ArrowUp, Plus, Minus, ChevronDown, ChevronUp, Zap, AlertCircle, BarChart3 } from 'lucide-react';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import QuickActions from '../components/dashboard/QuickActions';
@@ -42,6 +43,7 @@ const Dashboard = () => {
     insight: "✅ Business performance is stable."
   });
 
+  const { t } = useTranslation();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const business = JSON.parse(localStorage.getItem('business') || 'null');
   const businessName = business?.businessName || 'My Business';
@@ -226,8 +228,8 @@ const Dashboard = () => {
         
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">{businessName} Alpha</h1>
-          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mt-2 mb-1 opacity-80">Real-time Financial Command Center</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">{businessName} {t('dashboard.title')}</h1>
+          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mt-2 mb-1 opacity-80">{t('dashboard.subtitle')}</p>
         </div>
 
         {/* Anomaly Alert Alert */}
@@ -242,23 +244,23 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-red-900 font-bold">
-                  {data.anomalies.filter(a => a.anomaly === 1).length} Unusual Transaction{data.anomalies.filter(a => a.anomaly === 1).length > 1 ? 's' : ''} Detected
+                  {data.anomalies.filter(a => a.anomaly === 1).length} {t('dashboard.anomalyAlert')}
                 </p>
-                <p className="text-red-700 text-sm">Our ML model has identified potential risks in your recent cashflow. Review now.</p>
+                <p className="text-red-700 text-sm">{t('dashboard.anomalyDesc')}</p>
               </div>
             </div>
             <div className="bg-white p-2 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-all">
-              <span className="text-xs font-bold uppercase tracking-wider px-2">Review</span>
+              <span className="text-xs font-bold uppercase tracking-wider px-2">{t('dashboard.review')}</span>
             </div>
           </Link>
         )}
 
         {/* Top Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <SummaryCard title="Total Revenue" amount={metrics.totalRevenue} icon={TrendingUp} colorClass="bg-green-100 text-green-600" />
-          <SummaryCard title="Total Expenses" amount={metrics.totalExpense} icon={TrendingDown} colorClass="bg-red-100 text-red-600" />
-          <SummaryCard title="Net Profit" amount={metrics.profit} icon={IndianRupee} colorClass="bg-blue-100 text-blue-600" />
-          <SummaryCard title="Cash Balance" amount={metrics.balance} icon={Wallet} colorClass="bg-purple-100 text-purple-600" />
+          <SummaryCard title={t('dashboard.summary.revenue')} amount={metrics.totalRevenue} icon={TrendingUp} colorClass="bg-green-100 text-green-600" />
+          <SummaryCard title={t('dashboard.summary.expenses')} amount={metrics.totalExpense} icon={TrendingDown} colorClass="bg-red-100 text-red-600" />
+          <SummaryCard title={t('dashboard.summary.profit')} amount={metrics.profit} icon={IndianRupee} colorClass="bg-blue-100 text-blue-600" />
+          <SummaryCard title={t('dashboard.summary.balance')} amount={metrics.balance} icon={Wallet} colorClass="bg-purple-100 text-purple-600" />
         </div>
 
         {/* Big Action Buttons (Received / Spent) */}
@@ -273,30 +275,30 @@ const Dashboard = () => {
                 <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100">
                     <BarChart3 size={24} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">Executive Performance</h2>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">{t('dashboard.performance.title')}</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Current Status</p>
-                    <p className={`text-xl font-black flex items-center gap-2 ${
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t('dashboard.performance.status')}</p>
+                    <div className={`text-xl font-black flex items-center gap-2 ${
                         performance.status === 'Unstable' ? 'text-red-600' : 
                         performance.status === 'Moderate' ? 'text-yellow-600' : 'text-green-600'
                     }`}>
                         {performance.status === 'Unstable' && <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></div>}
-                        {performance.status}
-                    </p>
+                        <span>{performance.status}</span>
+                    </div>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Revenue Trend</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t('dashboard.performance.revenueTrend')}</p>
                     <p className="text-xl font-black text-gray-700 tracking-tight">{performance.revenue}</p>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Expense Control</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t('dashboard.performance.expenseControl')}</p>
                     <p className="text-xl font-black text-gray-700 tracking-tight">{performance.expense}</p>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Risk Level</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t('dashboard.performance.riskLevel')}</p>
                     <p className={`text-xl font-black tracking-tight ${
                         performance.risk === 'High' ? 'text-red-600' : 
                         performance.risk === 'Medium' ? 'text-yellow-600' : 'text-green-600'
@@ -311,7 +313,7 @@ const Dashboard = () => {
                 <p className={`font-black text-xs uppercase tracking-widest mb-1 opacity-60 ${
                     performance.status === 'Unstable' ? 'text-red-700' : 
                     performance.status === 'Moderate' ? 'text-yellow-700' : 'text-green-700'
-                }`}>AI Decision Summary</p>
+                }`}>{t('dashboard.performance.aiSummary')}</p>
                 <p className={`font-bold text-sm leading-relaxed ${
                     performance.status === 'Unstable' ? 'text-red-800' : 
                     performance.status === 'Moderate' ? 'text-yellow-800' : 'text-green-800'
@@ -324,12 +326,12 @@ const Dashboard = () => {
         {/* Operational Metrics Section */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-finexa-text">Operational Performance</h2>
+            <h2 className="text-xl font-bold text-finexa-text">{t('dashboard.operations.title')}</h2>
             <button 
               onClick={openOperationalModal}
               className="flex items-center gap-2 bg-white text-finexa-primary border border-finexa-primary hover:bg-finexa-primary hover:text-white px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm"
             >
-              <Plus size={14}/> Update Performance
+              <Plus size={14}/> {t('dashboard.operations.update')}
             </button>
           </div>
           <OperationalMetrics metrics={data.opInsights?.metrics || {}} />
@@ -359,14 +361,14 @@ const Dashboard = () => {
                 {txForm.type === 'income' ? <ArrowUp size={24} strokeWidth={3} /> : <ArrowDown size={24} strokeWidth={3} />}
               </div>
               <h2 className="text-2xl font-extrabold text-gray-800">
-                {txForm.type === 'income' ? 'Amount Received' : 'Amount Spent'}
+                {txForm.type === 'income' ? t('dashboard.modal.received') : t('dashboard.modal.spent')}
               </h2>
             </div>
 
             <form onSubmit={submitTx} className="space-y-4">
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Amount (₹)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('dashboard.modal.amount')}</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                      <span className="text-gray-500 font-bold text-lg">₹</span>
@@ -376,13 +378,13 @@ const Dashboard = () => {
                     value={txForm.amount}
                     onChange={(e) => setTxForm({...txForm, amount: e.target.value})}
                     className="w-full border-2 border-gray-200 rounded-xl pl-10 pr-4 py-3 text-lg font-bold text-gray-800 focus:ring-0 focus:border-finexa-primary outline-none transition-all shadow-sm"
-                    placeholder="Enter amount"
+                    placeholder={t('dashboard.modal.amountPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('dashboard.modal.category')}</label>
                 {!showAddCategory ? (
                   <div className="flex gap-2">
                     <select 
@@ -399,7 +401,7 @@ const Dashboard = () => {
                       {categories.filter(c => c.type === txForm.type).map(cat => (
                         <option key={cat._id} value={cat.name}>{cat.name}</option>
                       ))}
-                      <option value="ADD_NEW" className="text-finexa-primary font-bold">+ Add New Category</option>
+                      <option value="ADD_NEW" className="text-finexa-primary font-bold">{t('dashboard.modal.addNew')}</option>
                     </select>
                   </div>
                 ) : (
@@ -407,33 +409,25 @@ const Dashboard = () => {
                     <div className="flex gap-2">
                       <input 
                         type="text"
-                        placeholder="New category name"
+                        placeholder={t('dashboard.modal.newCategoryPlaceholder')}
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         className="flex-1 border-2 border-finexa-primary rounded-xl px-4 py-2 outline-none"
                       />
-                      <button 
-                        type="button"
-                        onClick={handleAddCategory}
-                        className="bg-finexa-primary text-white px-4 py-2 rounded-xl font-bold"
-                      >
-                        Add
+                      <button type="button" onClick={handleAddCategory} className="bg-finexa-primary text-white px-4 py-2 rounded-xl font-bold">
+                        {t('dashboard.modal.addBtn')}
                       </button>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowAddCategory(false)}
-                      className="text-finexa-muted text-xs hover:text-finexa-primary"
-                    >
-                      Back to list
+                    <button type="button" onClick={() => setShowAddCategory(false)} className="text-finexa-muted text-xs hover:text-finexa-primary">
+                      {t('dashboard.modal.backToList')}
                     </button>
                   </div>
                 )}
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
-                <button type="submit" className={`flex-1 px-4 py-3 text-white font-bold rounded-xl shadow-md ${txForm.type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>Confirm Transaction</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">{t('dashboard.modal.cancel')}</button>
+                <button type="submit" className={`flex-1 px-4 py-3 text-white font-bold rounded-xl shadow-md ${txForm.type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>{t('dashboard.modal.confirm')}</button>
               </div>
             </form>
           </div>
@@ -448,44 +442,44 @@ const Dashboard = () => {
                <div className="p-3 bg-blue-50 rounded-full">
                   <Zap size={24} />
                </div>
-               <h2 className="text-2xl font-extrabold text-gray-800">Operational Update</h2>
+               <h2 className="text-2xl font-extrabold text-gray-800">{t('dashboard.operations.modalTitle')}</h2>
             </div>
 
             <form onSubmit={submitTx} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Total Orders / Bookings</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.orders')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.ordersReceived} onChange={(e) => setTxForm({...txForm, ordersReceived: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Completed Work</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.completed')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.ordersCompleted} onChange={(e) => setTxForm({...txForm, ordersCompleted: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Pending Work</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.pending')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.pendingOrders} onChange={(e) => setTxForm({...txForm, pendingOrders: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Volume / Items Sold</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.items')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.itemsSold} onChange={(e) => setTxForm({...txForm, itemsSold: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Avg Delivery Time (Days)</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.delivery')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.deliveryTimeAvg} onChange={(e) => setTxForm({...txForm, deliveryTimeAvg: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Errors / Complaints</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.errors')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.defects} onChange={(e) => setTxForm({...txForm, defects: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Inventory / Stock Level (Optional)</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{t('dashboard.operations.inventory')}</label>
                   <input type="number" min="0" placeholder="0" value={txForm.inventoryLevel} onChange={(e) => setTxForm({...txForm, inventoryLevel: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
               </div>
 
               <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setShowOpModal(false)} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-3 bg-finexa-primary text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition-all">Update Performance</button>
+                <button type="button" onClick={() => setShowOpModal(false)} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">{t('dashboard.modal.cancel')}</button>
+                <button type="submit" className="flex-1 px-4 py-3 bg-finexa-primary text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition-all">{t('dashboard.modal.updatePerf')}</button>
               </div>
             </form>
           </div>

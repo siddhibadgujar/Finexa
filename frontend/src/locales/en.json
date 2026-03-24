@@ -1,0 +1,136 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "trendAnalysis": "Trend Analysis",
+    "anomaly": "Anomaly",
+    "profile": "Profile & Settings",
+    "logout": "Logout",
+    "login": "Log In",
+    "signup": "Sign Up"
+  },
+  "dashboard": {
+    "title": "Alpha",
+    "subtitle": "Real-time Financial Command Center",
+    "anomalyAlert": "Unusual Transaction(s) Detected",
+    "anomalyDesc": "Our ML model has identified potential risks in your recent cashflow. Review now.",
+    "review": "Review",
+    "quickActions": {
+      "received": "Received (+)",
+      "spent": "Spent (-)"
+    },
+    "summary": {
+      "revenue": "Total Revenue",
+      "expenses": "Total Expenses",
+      "profit": "Net Profit",
+      "balance": "Cash Balance"
+    },
+    "performance": {
+      "title": "Executive Performance",
+      "status": "Current Status",
+      "revenueTrend": "Revenue Trend",
+      "expenseControl": "Expense Control",
+      "riskLevel": "Risk Level",
+      "aiSummary": "AI Decision Summary"
+    },
+    "operations": {
+      "title": "Operational Performance",
+      "update": "Update Performance",
+      "modalTitle": "Operational Update",
+      "orders": "Total Orders / Bookings",
+      "completed": "Completed Work",
+      "pending": "Pending Work",
+      "items": "Volume / Items Sold",
+      "delivery": "Avg Delivery Time (Days)",
+      "errors": "Errors / Complaints",
+      "inventory": "Inventory / Stock Level (Optional)"
+    },
+    "modal": {
+      "received": "Amount Received",
+      "spent": "Amount Spent",
+      "amount": "Amount (₹)",
+      "amountPlaceholder": "Enter amount",
+      "category": "Category",
+      "addNew": "+ Add New Category",
+      "newCategoryPlaceholder": "New category name",
+      "addBtn": "Add",
+      "backToList": "Back to list",
+      "cancel": "Cancel",
+      "confirm": "Confirm Transaction",
+      "updatePerf": "Update Performance"
+    },
+    "insights": {
+      "financial": "Financial Insights",
+      "operational": "Operational Insights",
+      "noFinancial": "No financial alerts yet.",
+      "noOperational": "No operational data available"
+    },
+    "health": {
+      "title": "Business Health",
+      "excellent": "Excellent",
+      "fair": "Fair",
+      "attention": "Needs Attention",
+      "subtitle": "Based on your profit margins and expense ratios"
+    },
+    "transactions": {
+      "title": "Recent Activity",
+      "noData": "No transactions yet",
+      "noDataSub": "Your recent activity will appear here"
+    },
+    "charts": {
+      "incomeExpense": "Income vs Expense",
+      "byCategory": "Expenses by Category",
+      "noLine": "No income/expense data yet",
+      "noPie": "No expense data for this period",
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "opMetrics": {
+      "itemsSold": "Items Sold",
+      "ordersRecv": "Orders Recv.",
+      "ordersComp": "Orders Comp.",
+      "pendingOrders": "Pending Orders",
+      "inventory": "Inventory Level",
+      "delivery": "Avg Deliv. (h)",
+      "returns": "Returns / Defects"
+    }
+  },
+  "settings": {
+    "title": "Profile & Settings",
+    "subtitle": "Manage your account",
+    "sections": {
+      "account": "Account Info",
+      "business": "Business",
+      "preferences": "Preferences"
+    },
+    "fields": {
+      "name": "Full Name",
+      "email": "Email Address",
+      "role": "Role",
+      "businessName": "Business Name",
+      "businessType": "Business Category",
+      "language": "Language"
+    },
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "success": "Settings updated successfully",
+    "error": "Failed to update settings"
+  },
+  "analysis": {
+    "title": "Trend Analysis",
+    "subtitle": "Predictive Market & Operational Analytics"
+  },
+  "anomaly": {
+    "title": "Anomaly",
+    "subtitle": "AI Transaction Intelligence",
+    "refresh": "Refresh AI Analysis",
+    "refreshing": "AI Processing...",
+    "noData": "No critical anomalies identified within the current observation window."
+  },
+  "common": {
+    "loading": "Loading...",
+    "noData": "No data available",
+    "cancel": "Cancel",
+    "save": "Save"
+  }
+}

@@ -17,6 +17,7 @@ const Login = () => {
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('lastActive', Date.now());
 
       console.log("User logged in:", user);
 

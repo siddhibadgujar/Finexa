@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { MessageSquare, X, Send, Mic, Volume2, VolumeX, Sparkles, Zap } from 'lucide-react';
 
 const Chatbot = () => {
@@ -11,138 +10,16 @@ const Chatbot = () => {
   const [loading, setLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
-  
+
   const scrollRef = useRef(null);
-  
+  const recognitionRef = useRef(null); // single recognition instance ref
+
+  // Auto-scroll on new message
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
-  // --- Speech Recognition ---
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = Recognition ? new Recognition() : null;
-  const triggerRecRef = useRef(null);
-
-  const greetingText = "Hello! I am Finexa, your AI business assistant. How can I help you today?";
-
-  if (recognition) {
-    recognition.continuous = false;
-    recognition.interimResults = true; // Enable live feedback
-    
-    recognition.onresult = (event) => {
-      let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          setIsListening(false);
-          handleSend(transcript, true);
-        } else {
-          interimTranscript += transcript;
-          setInput(interimTranscript); // Show live text
-        }
-      }
-    };
-
-    recognition.onerror = (err) => {
-      console.error("Recognition error:", err.error);
-      setIsListening(false);
-      startTrigger();
-    };
-    
-    recognition.onend = () => {
-      if (!isListening) startTrigger();
-    };
-  }
-
-  const startTrigger = () => {
-    if (!Recognition || isListening) return;
-    if (triggerRecRef.current) return;
-
-    console.log("Finexa: Starting voice trigger recognition...");
-    const tr = new Recognition();
-    tr.continuous = true;
-    tr.interimResults = true;
-    
-    tr.onresult = (event) => {
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript.toLowerCase();
-        console.log("Finexa Trigger Current Transcript:", transcript);
-        
-        const hasHey = transcript.includes('hey') || transcript.includes('hi') || transcript.includes('hello');
-        const hasFinexa = transcript.includes('finexa') || transcript.includes('phoenix') || transcript.includes('fine') || 
-                           transcript.includes('find') || transcript.includes('five') || transcript.includes('finance') ||
-                           transcript.includes('finish') || transcript.includes('assistant') || transcript.includes('buddy') ||
-                           transcript.includes('help');
-        
-        if (hasFinexa || (hasHey && hasFinexa)) {
-          console.log("Finexa: Wake word detected! Opening chat...");
-          window.alert("Matched: " + (hasFinexa ? "Finexa/Assistant word" : "Hey phrase")); // Final debug HUD
-          stopTrigger();
-          setIsOpen(true);
-          // Play greeting then start listening automatically
-          speak(greetingText, () => {
-            console.log("Greeting finished or failed. Starting to listen...");
-            startListening();
-          });
-        }
-      }
-    };
-    
-    tr.onerror = (err) => {
-      console.error("Finexa Trigger Error:", err.error);
-      stopTrigger();
-      // Restart after a short delay if it's not a permanent error
-      if (err.error !== 'not-allowed') {
-        setTimeout(startTrigger, 1000);
-      }
-    };
-
-    tr.onend = () => {
-      console.log("Finexa Trigger: Recognition ended.");
-      triggerRecRef.current = null;
-      if (!isListening) {
-        setTimeout(startTrigger, 500);
-      }
-    };
-
-    try {
-      tr.start();
-      triggerRecRef.current = tr;
-    } catch (e) {
-      console.error("Finexa Trigger Start Error:", e);
-      triggerRecRef.current = null;
-    }
-  };
-
-  const stopTrigger = () => {
-    if (triggerRecRef.current) {
-      try { triggerRecRef.current.stop(); } catch (e) {}
-      triggerRecRef.current = null;
-    }
-  };
-
-  const playBeep = () => {
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.1);
-    } catch (e) {}
-  };
-
-  // --- Voice Trigger Setup ---
-  useEffect(() => {
-    startTrigger();
-    return () => stopTrigger();
-  }, [Recognition]);
 
   // --- Text-to-Speech ---
   const speak = (text, onEndCallback) => {
@@ -150,43 +27,93 @@ const Chatbot = () => {
       if (onEndCallback) onEndCallback();
       return;
     }
-    
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    if (/[\u0900-\u097F]/.test(text)) {
-      utterance.lang = 'hi-IN'; 
-    } else {
-      utterance.lang = 'en-US';
-    }
-
+    utterance.lang = /[\u0900-\u097F]/.test(text) ? 'hi-IN' : 'en-US';
     if (onEndCallback) {
       utterance.onend = () => onEndCallback();
       utterance.onerror = () => onEndCallback();
     }
-    
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSend = async (text, isVoiceSession = false) => {
-    const messageText = text || input;
-    if (!messageText.trim()) {
-      if (isVoiceSession) startTrigger();
-      return;
+  // --- Start voice listening (manual trigger only, NO auto-restart) ---
+  const startListening = () => {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) return alert('Speech recognition not supported in this browser.');
+    if (isListening) return; // prevent double-start
+
+    // Stop any existing session first
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (_) {}
+      recognitionRef.current = null;
     }
 
-    try {
-      setLoading(true);
-      const userMessage = { role: 'user', text: messageText };
-      setMessages(prev => [...prev, userMessage]);
-      setInput('');
+    const rec = new Recognition();
+    rec.continuous = false;
+    rec.interimResults = true;
 
+    rec.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          setIsListening(false);
+          recognitionRef.current = null;
+          handleSend(transcript, false);
+        } else {
+          setInput(transcript); // show live text
+        }
+      }
+    };
+
+    // DO NOT auto-restart on end or error — just clean up
+    rec.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    rec.onerror = (err) => {
+      console.warn('Voice recognition error:', err.error);
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    try {
+      rec.start();
+      recognitionRef.current = rec;
+      setIsListening(true);
+    } catch (e) {
+      console.error('Recognition start error:', e);
+      setIsListening(false);
+    }
+  };
+
+  // Stop listening if component unmounts
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (_) {}
+      }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
+  // --- Send message ---
+  const handleSend = async (text, isVoice = false) => {
+    const messageText = (text || input).trim();
+    if (!messageText) return;
+
+    setInput('');
+    setLoading(true);
+    setMessages(prev => [...prev, { role: 'user', text: messageText }]);
+
+    try {
       const token = localStorage.getItem('token');
-      const res = await fetch("http://localhost:5555/api/chat", {
-        method: "POST",
+      const res = await fetch('http://localhost:5555/api/chat', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": token || ""
+          'Content-Type': 'application/json',
+          'x-auth-token': token || ''
         },
         body: JSON.stringify({ message: messageText })
       });
@@ -194,52 +121,30 @@ const Chatbot = () => {
       let data;
       try {
         data = await res.json();
-      } catch (parseErr) {
-        console.error("JSON Parsing Error:", parseErr);
-        data = { reply: "Server error, try again" };
+      } catch (_) {
+        data = { reply: 'Server error, please try again.' };
       }
 
-      const botMessage = { 
-        role: 'assistant', 
-        text: data.reply || "I'm having trouble understanding right now."
-      };
-      setMessages(prev => [...prev, botMessage]);
-      speak(data.reply);
+      const botReply = data.reply || "I'm having trouble understanding right now.";
+      setMessages(prev => [...prev, { role: 'assistant', text: botReply, source: data.source }]);
+      speak(botReply);
     } catch (err) {
-      console.error("Chatbot Error:", err);
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Server error, try again' }]);
+      console.error('Chatbot Error:', err);
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Server error, please try again.' }]);
     } finally {
       setLoading(false);
-      if (isVoiceSession) startTrigger();
     }
   };
-
-  const startListening = () => {
-    if (!recognition) return alert('Speech recognition not supported in this browser.');
-    stopTrigger();
-    setIsListening(true);
-    try {
-      recognition.start();
-    } catch (e) {
-      console.error("Recognition start error:", e);
-      setIsListening(false);
-      startTrigger();
-    }
-  };
-
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
       {/* Chat Toggle Button */}
       {!isOpen && (
-        <button 
+        <button
           onClick={() => setIsOpen(true)}
           className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 transition-all group relative"
         >
           <MessageSquare size={30} />
-          {triggerRecRef.current && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse shadow-sm" title="Voice Trigger Active"></div>
-          )}
           <div className="absolute right-full mr-4 bg-white text-gray-800 px-4 py-2 rounded-xl text-sm font-bold shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             Ask Finexa AI
           </div>
@@ -249,7 +154,7 @@ const Chatbot = () => {
       {/* Chat Window */}
       {isOpen && (
         <div className="bg-white w-[350px] md:w-[400px] h-[550px] rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
-          
+
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
@@ -265,7 +170,7 @@ const Chatbot = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => {
                   if (voiceEnabled) window.speechSynthesis.cancel();
                   setVoiceEnabled(!voiceEnabled);
@@ -285,9 +190,9 @@ const Chatbot = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`}>
                 <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium ${
-                  msg.role === 'user' 
-                  ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-100' 
-                  : 'bg-white text-gray-800 rounded-tl-none shadow-sm border border-gray-100'
+                  msg.role === 'user'
+                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-100'
+                    : 'bg-white text-gray-800 rounded-tl-none shadow-sm border border-gray-100'
                 }`}>
                   {msg.text}
                   {(msg.source === 'rule-based' || msg.source === 'fallback') && (
@@ -310,10 +215,10 @@ const Chatbot = () => {
             )}
           </div>
 
-          {/* Suggeted Questions */}
+          {/* Suggested Questions */}
           <div className="px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide bg-gray-50/50 border-t border-gray-100">
             {['How is my business?', 'Profit low?', 'Spending?'].map(q => (
-              <button 
+              <button
                 key={q}
                 onClick={() => handleSend(q)}
                 className="whitespace-nowrap bg-white border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all font-sans"
@@ -326,21 +231,22 @@ const Chatbot = () => {
           {/* Input Area */}
           <div className="p-4 bg-white border-t border-gray-100">
             <div className="flex gap-2 p-2 bg-gray-50 rounded-2xl border-2 border-transparent focus-within:border-indigo-500 transition-all">
-              <button 
+              <button
                 onClick={startListening}
+                disabled={isListening}
                 className={`p-2 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-indigo-600 hover:bg-white'}`}
               >
                 <Mic size={22} />
               </button>
-              <input 
-                type="text" 
-                placeholder={isListening ? 'Listening...' : "Ask anything..."}
+              <input
+                type="text"
+                placeholder={isListening ? 'Listening...' : 'Ask anything...'}
                 className="flex-1 bg-transparent border-none outline-none px-2 font-medium text-gray-700 placeholder:text-gray-400 font-sans"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               />
-              <button 
+              <button
                 disabled={!input.trim() || loading}
                 onClick={() => handleSend()}
                 className="p-2 bg-indigo-600 text-white rounded-xl disabled:bg-indigo-300 disabled:cursor-not-allowed hover:bg-indigo-700 transition-all shadow-md active:scale-95"
@@ -358,4 +264,3 @@ const Chatbot = () => {
 };
 
 export default Chatbot;
-

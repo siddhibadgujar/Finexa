@@ -20,6 +20,7 @@ app.use('/api/analysis', require('./routes/analysis'));
 app.use('/api/report', require('./routes/report'));
 app.use('/api/anomaly', require('./routes/anomaly'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/user', require('./routes/user'));
 
 // Sample Route
 app.get('/api/test', (req, res) => {

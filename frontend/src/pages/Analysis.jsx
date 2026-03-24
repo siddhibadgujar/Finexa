@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, BarChart3, Clock, AlertCircle, Zap, Activity, ShieldCheck, Truck } from 'lucide-react';
 import SummaryCard from '../components/analysis/SummaryCard';
 import TrendChart from '../components/analysis/TrendChart';
@@ -7,6 +8,7 @@ import DateFilter from '../components/analysis/DateFilter';
 import InsightsPanel from '../components/analysis/InsightsPanel';
 
 const Analysis = () => {
+    const { t } = useTranslation();
     const [range, setRange] = useState('30d');
     const [groupBy, setGroupBy] = useState('day');
     const [isAutoAdjusted, setIsAutoAdjusted] = useState(false);
@@ -130,14 +132,14 @@ const Analysis = () => {
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">
-                            Trend Intelligence
+                            {t('analysis.title')}
                         </h1>
                         <div className="flex items-center gap-2 mt-2">
                              <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></div>
                                 <span className="text-[10px] font-black uppercase tracking-widest">Baseline Sync</span>
                             </div>
-                            <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-[9px] opacity-80">Predictive Market & Operational Analytics</p>
+                            <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-[9px] opacity-80">{t('analysis.subtitle')}</p>
                         </div>
                     </div>
                 </div>
