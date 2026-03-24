@@ -221,13 +221,13 @@ const Dashboard = () => {
   const { metrics, charts, insights, transactions } = data;
 
   return (
-    <div className="min-h-full bg-finexa-bg p-4 md:p-8 font-sans pb-20">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-full bg-finexa-bg pb-20">
+      <div className="section-container space-y-10">
         
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-finexa-text tracking-tight capitalize">{businessName} Overview</h1>
-          <p className="text-finexa-muted mt-1">Here's your business at a glance today.</p>
+        <div>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">{businessName} Alpha</h1>
+          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mt-2 mb-1 opacity-80">Real-time Financial Command Center</p>
         </div>
 
         {/* Anomaly Alert Alert */}
@@ -268,12 +268,12 @@ const Dashboard = () => {
         <ChartSection lineData={charts.lineChartData} pieData={charts.pieChartData} />
 
         {/* Business Performance Section */}
-        <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm mb-10 overflow-hidden relative group">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+        <div className="bg-white rounded-[1.25rem] p-10 border border-gray-100 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.04),0_4px_12px_-2px_rgba(0,0,0,0.03)] mb-10 overflow-hidden relative group hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08),0_8px_16px_-4px_rgba(0,0,0,0.04)] transition-all duration-300">
+            <div className="flex items-center gap-3 mb-10">
+                <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100">
                     <BarChart3 size={24} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-800 tracking-tight uppercase italic">📊 Business Performance</h2>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">Executive Performance</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

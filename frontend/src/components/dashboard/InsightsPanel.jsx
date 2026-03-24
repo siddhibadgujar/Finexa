@@ -41,7 +41,7 @@ const InsightsPanel = ({ insights, operationalInsights }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full space-y-6">
+    <div className="business-card p-8 flex flex-col h-full space-y-8">
       
       {/* Financial Section */}
       <div>

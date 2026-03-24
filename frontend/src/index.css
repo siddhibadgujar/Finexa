@@ -4,10 +4,29 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f3f4f6;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+@layer components {
+  .business-card {
+    @apply bg-white rounded-[1.25rem] border border-gray-100/50 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.04),0_4px_12px_-2px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08),0_8px_16px_-4px_rgba(0,0,0,0.04)] transition-all duration-300;
+  }
+  
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12;
+  }
+
+  .business-btn-primary {
+    @apply bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 hover:-translate-y-0.5 transition-all shadow-md shadow-indigo-100;
+  }
+
+  .business-btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-200 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all;
+  }
 }

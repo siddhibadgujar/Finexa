@@ -3,8 +3,8 @@ import { ArrowDownRight, ArrowUpRight, Calendar } from 'lucide-react';
 
 const TransactionList = ({ transactions }) => {
   return (
-    <div className="bg-finexa-card p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
-      <h3 className="text-lg font-semibold text-finexa-text mb-6">Recent Transactions</h3>
+    <div className="business-card p-8 h-full flex flex-col">
+      <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 px-1">Recent Activity</h3>
       
       {transactions && transactions.length > 0 ? (
         <div className="max-h-[350px] overflow-y-auto overflow-x-hidden pr-3 overscroll-contain [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">

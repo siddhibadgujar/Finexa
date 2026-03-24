@@ -22,8 +22,8 @@ const HealthScore = ({ score }) => {
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="bg-finexa-card p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center h-full">
-      <h3 className="text-lg font-semibold text-finexa-text mb-6 w-full text-left">Business Health</h3>
+    <div className="business-card p-8 flex flex-col items-center justify-center text-center h-full">
+      <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8 w-full text-left">Business Health</h3>
       
       <div className="relative w-40 h-40 flex items-center justify-center mb-6">
         {/* Background Circle */}

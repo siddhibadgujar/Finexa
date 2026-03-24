@@ -124,19 +124,21 @@ const Analysis = () => {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 p-4 md:p-8 font-sans pb-20">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-full bg-finexa-bg pb-20">
+            <div className="section-container space-y-12">
                 {/* Header */}
-                <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                            Trend Analysis
-                            <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></div>
-                                <span className="text-[10px] font-black uppercase tracking-widest">Live Sync</span>
-                            </div>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">
+                            Trend Intelligence
                         </h1>
-                        <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-[10px]">Advanced business trend insights and analytics</p>
+                        <div className="flex items-center gap-2 mt-2">
+                             <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></div>
+                                <span className="text-[10px] font-black uppercase tracking-widest">Baseline Sync</span>
+                            </div>
+                            <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-[9px] opacity-80">Predictive Market & Operational Analytics</p>
+                        </div>
                     </div>
                 </div>
 
@@ -154,7 +156,7 @@ const Analysis = () => {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                   </div>
                 ) : (
-                  <>
+                  <div className="space-y-12">
                     {/* 1. Main Graph */}
                     <div className="mt-4">
                       <TrendChart 
@@ -175,13 +177,13 @@ const Analysis = () => {
                                 { label: 'Quality', value: perfDisplay.quality, icon: ShieldCheck, color: perfDisplay.quality === 'Good' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' },
                                 { label: 'Delivery', value: perfDisplay.delivery, icon: Truck, color: perfDisplay.delivery === 'Fast' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' }
                             ].map((item, idx) => (
-                                <div key={idx} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                                <div key={idx} className="business-card p-6 flex items-center gap-4">
                                     <div className={`p-3 rounded-2xl ${item.color.split(' ')[1]} ${item.color.split(' ')[0]}`}>
                                         <item.icon size={24} />
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">{item.label}</p>
-                                        <p className={`text-xl font-black ${item.color.split(' ')[0]}`}>{item.value || 'N/A'}</p>
+                                        <p className={`text-xl font-black tracking-tight ${item.color.split(' ')[0]}`}>{item.value || 'N/A'}</p>
                                     </div>
                                 </div>
                             ))}
@@ -323,7 +325,7 @@ const Analysis = () => {
                             </div>
                         </div>
                     </div>
-                  </>
+                  </div>
                 )}
             </div>
         </div>

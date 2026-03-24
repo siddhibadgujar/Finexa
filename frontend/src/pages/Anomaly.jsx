@@ -117,21 +117,22 @@ const Anomaly = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in duration-700 pb-24">
+    <div className="min-h-full bg-finexa-bg pb-24">
+      <div className="section-container space-y-12">
       {/* Header with Risk Score */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">AI Decision Portal</h1>
-            <div className={`px-4 py-2 rounded-2xl border-2 font-black text-sm flex items-center gap-2 ${getRiskColor(data.riskLevel)}`}>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">Anomaly Command</h1>
+            <div className={`px-4 py-2 rounded-2xl border-2 font-black text-sm flex items-center gap-2 shadow-sm ${getRiskColor(data.riskLevel)}`}>
               <Activity size={18} />
-              RISK SCORE: {data.riskScore}/100 ({data.riskLevel})
+              RISK: {data.riskScore}/100
             </div>
           </div>
-          <p className="text-gray-500 mt-2 font-bold flex items-center gap-3">
-            Real-time anomaly monitoring & predictive risk assessment
-            <span className="text-[10px] uppercase font-black tracking-widest bg-gray-100 px-2 py-1 rounded text-gray-500">
-              Live: {lastUpdated.toLocaleTimeString()}
+          <p className="text-[9px] text-indigo-600 mt-2 font-black uppercase tracking-[0.3em] opacity-80 flex items-center gap-3">
+            Probabilistic Deviation Monitoring & ML Mitigation
+            <span className="text-[9px] uppercase font-black tracking-widest bg-white/50 border border-gray-100 px-2 py-0.5 rounded text-gray-400">
+              Uptime: {lastUpdated.toLocaleTimeString()}
             </span>
           </p>
         </div>
@@ -319,6 +320,7 @@ const Anomaly = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };
