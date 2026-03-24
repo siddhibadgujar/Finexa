@@ -202,7 +202,10 @@ const Chatbot = () => {
       });
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I am having trouble connecting.' }]);
+      const errorMsg = error.code === 'ERR_NETWORK' 
+        ? 'Cannot connect to server. Please ensure the backend is running on port 5555.'
+        : 'Sorry, I am having trouble connecting. Check your internet or backend status.';
+      setMessages(prev => [...prev, { role: 'assistant', text: errorMsg }]);
       startTrigger();
     } finally {
       setLoading(false);

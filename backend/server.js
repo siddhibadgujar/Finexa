@@ -25,7 +25,7 @@ app.get('/api/test', (req, res) => {
   res.send('Finexa API working');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5555;
 
 // Connect to MongoDB before starting server
 connectDB().then(() => {
