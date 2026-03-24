@@ -188,25 +188,13 @@ const Chatbot = () => {
 
       const botMessage = { 
         role: 'assistant', 
-        text: res.data.reply,
-        source: res.data.source
+        text: res.data.reply
       };
       setMessages(prev => [...prev, botMessage]);
-      
-      speak(res.data.reply, () => {
-        if (isVoiceSession && voiceEnabled) {
-          startListening();
-        } else {
-          startTrigger();
-        }
-      });
-    } catch (error) {
-      console.error('Chat error:', error);
-      const errorMsg = error.code === 'ERR_NETWORK' 
-        ? 'Cannot connect to server. Please ensure the backend is running on port 5555.'
-        : 'Sorry, I am having trouble connecting. Check your internet or backend status.';
-      setMessages(prev => [...prev, { role: 'assistant', text: errorMsg }]);
-      startTrigger();
+      speak(res.data.reply);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Server error, try again' }]);
     } finally {
       setLoading(false);
     }
