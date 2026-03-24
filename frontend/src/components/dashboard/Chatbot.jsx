@@ -175,28 +175,42 @@ const Chatbot = () => {
       return;
     }
 
-    const userMessage = { role: 'user', text: messageText };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
-
     try {
+      setLoading(true);
+      const userMessage = { role: 'user', text: messageText };
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5555/api/chat', { message: messageText }, {
-        headers: { 'x-auth-token': token }
+      const res = await fetch("http://localhost:5555/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token || ""
+        },
+        body: JSON.stringify({ message: messageText })
       });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        console.error("JSON Parsing Error:", parseErr);
+        data = { reply: "Server error, try again" };
+      }
 
       const botMessage = { 
         role: 'assistant', 
-        text: res.data.reply
+        text: data.reply || "I'm having trouble understanding right now."
       };
       setMessages(prev => [...prev, botMessage]);
-      speak(res.data.reply);
+      speak(data.reply);
     } catch (err) {
-      console.error(err);
+      console.error("Chatbot Error:", err);
       setMessages(prev => [...prev, { role: 'assistant', text: 'Server error, try again' }]);
     } finally {
       setLoading(false);
+      if (isVoiceSession) startTrigger();
     }
   };
 
@@ -327,7 +341,7 @@ const Chatbot = () => {
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               />
               <button 
-                disabled={!input.trim()}
+                disabled={!input.trim() || loading}
                 onClick={() => handleSend()}
                 className="p-2 bg-indigo-600 text-white rounded-xl disabled:bg-indigo-300 disabled:cursor-not-allowed hover:bg-indigo-700 transition-all shadow-md active:scale-95"
               >

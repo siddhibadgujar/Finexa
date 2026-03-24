@@ -10,44 +10,24 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/", async (req, res) => {
   try {
-    console.log("📩 Incoming request:", req.body);
-
     const { message } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ error: "Message is required" });
+    // simple response (can connect AI later)
+    let reply = "I did not understand";
+
+    if (message.toLowerCase().includes("profit")) {
+      reply = "Your profit is based on income minus expenses.";
+    } else if (message.toLowerCase().includes("spending")) {
+      reply = "Your expenses are increasing recently.";
+    } else if (message.toLowerCase().includes("business")) {
+      reply = "Your business is performing well overall.";
     }
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-    });
+    res.json({ reply });
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: message }],
-        },
-      ],
-    });
-
-    if (!result || !result.response) {
-      throw new Error("No response from Gemini");
-    }
-
-    const text = result.response.text();
-
-    console.log("🤖 Gemini reply:", text);
-
-    res.json({ reply: text });
-
-  } catch (error) {
-    console.error("🔥 FULL ERROR:", error);
-
-    res.status(500).json({
-      error: "Chatbot failed",
-      details: error.message,
-    });
+  } catch (err) {
+    console.error("Chatbot Route Error:", err);
+    res.status(500).json({ reply: "Server error" });
   }
 });
 
