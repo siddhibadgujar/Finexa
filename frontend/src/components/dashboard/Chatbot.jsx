@@ -57,9 +57,13 @@ const Chatbot = () => {
     tr.onresult = (event) => {
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript.toLowerCase();
-        console.log("Finexa Trigger Debug:", transcript);
-        if (transcript.includes('hey finexa') || transcript.includes('hey phoenix') || transcript.includes('finexa')) {
-          console.log("Finexa: Wake word detected!");
+        console.log("Finexa Trigger Current Transcript:", transcript);
+        
+        const hasHey = transcript.includes('hey') || transcript.includes('hi') || transcript.includes('hello');
+        const hasFinexa = transcript.includes('finexa') || transcript.includes('phoenix') || transcript.includes('fine');
+        
+        if (hasFinexa || (hasHey && hasFinexa)) {
+          console.log("Finexa: Wake word detected! Opening chat...");
           playBeep();
           setIsOpen(true);
           stopTrigger();
