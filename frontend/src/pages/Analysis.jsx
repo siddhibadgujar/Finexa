@@ -10,7 +10,7 @@ const Analysis = () => {
     const [range, setRange] = useState('30d');
     const [groupBy, setGroupBy] = useState('day');
     const [isAutoAdjusted, setIsAutoAdjusted] = useState(false);
-    const [data, setData] = useState({ trendData: [], summary: {}, insights: [], executiveSummary: "" });
+    const [data, setData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -43,7 +43,7 @@ const Analysis = () => {
         if (!isRefresh) setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5555/api/analysis/trends?range=${range}&groupBy=${groupBy}`, {
+            const res = await axios.get(`http://localhost:5555/api/analysis?range=${range}&groupBy=${groupBy}`, {
                 headers: { 'x-auth-token': token }
             });
             setData(res.data);
@@ -86,7 +86,8 @@ const Analysis = () => {
         </div>
     );
 
-    const { trendData, summary, insights, executiveAdvisory } = data;
+    const { comparison = {}, trends = {}, operations = {}, categories = {}, cashflow = {}, predictions = [], executiveAdvisory } = data;
+    const { trendData = [], summary = {}, insights = [] } = trends;
 
     // Priority Badge Color Helper
     const getPriorityColor = (priority) => {
@@ -129,25 +130,91 @@ const Analysis = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Summary Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <SummaryCard title="Revenue Trend" trend={summary.revenueTrend} suffix="%" />
-                        <SummaryCard title="Expense Trend" trend={summary.expenseTrend} suffix="%" />
-                        <SummaryCard title="Profit Trend" trend={summary.profitTrend} suffix="%" />
-                        <SummaryCard title="Orders Trend" trend={summary.ordersTrend} suffix="%" />
+                    {/* Comparison Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <SummaryCard title="Income Change" trend={comparison.incomeChange || 0} suffix="%" />
+                        <SummaryCard title="Expense Change" trend={comparison.expenseChange || 0} suffix="%" />
+                        <SummaryCard title="Profit Change" trend={comparison.profitChange || 0} suffix="%" />
                     </div>
 
                     {/* Main Chart */}
-                    <TrendChart 
-                      data={trendData} 
-                      title={`Performance Trends (${range.toUpperCase()} / ${groupBy.toUpperCase()})`} 
-                    />
+                    <div className="mt-8">
+                      <TrendChart 
+                        data={trendData} 
+                        title={`Performance Trends (${range.toUpperCase()} / ${groupBy.toUpperCase()})`} 
+                      />
+                    </div>
 
                     {/* Insights & Advisory Section */}
-                    <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <InsightsPanel insights={insights} />
+                    <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-8">
+                          {/* Top row insights */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">📈 Trend Insights</h3>
+                              <div className="space-y-3">
+                                {insights.map((i, idx) => (
+                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'warning' ? 'bg-yellow-50 border-yellow-100 text-yellow-800' : i.type === 'critical' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>
+                                    {i.message}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">🔮 Future Predictions</h3>
+                              <div className="space-y-3">
+                                {predictions.map((i, idx) => (
+                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
+                                    {i.message}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
 
-                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
+                          {/* Middle row insights */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">⚙️ Operational Performance</h3>
+                              <div className="space-y-3">
+                                {(operations.insights || []).map((i, idx) => (
+                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
+                                    {i.message}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">📊 Category Tracking</h3>
+                              <div className="space-y-3">
+                                {(categories.insights || []).map((i, idx) => (
+                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
+                                    {i.message}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom cash row */}
+                          <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                              <h3 className="font-bold text-gray-800 flex items-center gap-2">💸 Cash Flow Intelligence</h3>
+                              <div className="text-gray-500 text-xs font-bold uppercase tracking-wider bg-gray-50 px-3 py-1.5 rounded-lg">
+                                Avg Burn Rate: ₹{(cashflow.avgDailyExpense || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}/day
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              {(cashflow.insights || []).map((i, idx) => (
+                                <div key={idx} className={`p-4 rounded-xl border text-sm font-bold ${i.type === 'critical' ? 'bg-red-50 border-red-100 text-red-800' : i.type === 'warning' ? 'bg-yellow-50 border-yellow-100 text-yellow-800' : 'bg-green-50 border-green-100 text-green-800'}`}>
+                                  {i.message}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group lg:col-span-1 h-fit">
                             <div className="absolute top-0 right-0 p-4">
                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-xl ${getPriorityColor(executiveAdvisory?.priority)}`}>
                                     Priority: {executiveAdvisory?.priority}

@@ -10,41 +10,30 @@ const calculateTrend = (current, previous) => {
   return ((current - previous) / previous) * 100;
 };
 
-// Helper: Dynamic Insight Generator
-const generateInsights = (summary) => {
+// Helper: Dynamic Insight Generator with data-driven text
+const generateInsights = (summary, range) => {
   const insights = [];
   const { revenueTrend, expenseTrend, profitTrend, ordersTrend } = summary;
+  const periodStr = range === '7d' ? 'last week' : range === '30d' ? 'last month' : 'the previous period';
 
-  // Revenue logic
-  if (revenueTrend > 20) {
-    insights.push("Revenue is growing strongly, indicating high demand.");
-  } else if (revenueTrend > 0) {
-    insights.push("Revenue is increasing steadily.");
+  if (revenueTrend > 0) {
+    insights.push(`Revenue increased by ${revenueTrend.toFixed(0)}% compared to ${periodStr}`);
   } else if (revenueTrend < 0) {
-    insights.push("Revenue is declining. Investigate sales performance.");
+    insights.push(`Revenue decreased by ${Math.abs(revenueTrend).toFixed(0)}% compared to ${periodStr}`);
   }
 
-  // Expense logic
-  if (expenseTrend > revenueTrend) {
-    insights.push("Expenses are rising faster than revenue, reducing profitability.");
+  if (expenseTrend > 0) {
+    insights.push(`Expenses rose by ${expenseTrend.toFixed(0)}% compared to ${periodStr}`);
   }
 
-  // Profit logic
   if (profitTrend > 0) {
-    insights.push("Profit margins are improving.");
+    insights.push(`Profit margin improved by ${profitTrend.toFixed(0)}% compared to ${periodStr}`);
   } else if (profitTrend < 0) {
-    insights.push("Profit is declining. Cost control is needed.");
-  }
-
-  // Orders logic
-  if (ordersTrend > 10) {
-    insights.push("Order volume is scaling up rapidly.");
-  } else if (ordersTrend < 0) {
-    insights.push("Order volume is decreasing. Demand may be weakening.");
+    insights.push(`Profit margin dropped by ${Math.abs(profitTrend).toFixed(0)}% compared to ${periodStr}`);
   }
 
   if (insights.length === 0) {
-    insights.push("Business performance is currently stable.");
+    insights.push("Business performance is maintaining stable baselines.");
   }
 
   return insights;
@@ -111,7 +100,7 @@ const generateExecutiveAdvisory = (summary) => {
   return advisory;
 };
 
-exports.getTrends = async (req, res) => {
+exports.getAnalysis = async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
     let { range = '30d', groupBy = 'day' } = req.query;
@@ -229,14 +218,111 @@ exports.getTrends = async (req, res) => {
 
     const trendData = Array.from(mergedMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
-    // 6. Final Logic-Based Insights
-    const insights = generateInsights(finalSummary);
+    // 6. Native Data-Driven Insights
+    const insights = generateInsights(finalSummary, range);
     const executiveAdvisory = generateExecutiveAdvisory(finalSummary);
 
+    // 7. Comparison Payload
+    const comparison = {
+      incomeChange: finalSummary.revenueTrend,
+      expenseChange: finalSummary.expenseTrend,
+      profitChange: finalSummary.profitTrend
+    };
+
+    // 8. Operations Analysis Payload
+    const operationsData = await Operation.find({ userId }).sort({ date: -1 }).limit(1);
+    let operationsInsights = [];
+    if (operationsData.length > 0) {
+      const todayOp = operationsData[0];
+      const { ordersReceived = 0, ordersCompleted = 0, pendingOrders = 0, deliveryTimeAvg = 0, defects = 0 } = todayOp.metrics || {};
+      const completionRate = ordersReceived > 0 ? (ordersCompleted / ordersReceived) : 0;
+      const pendingRatio = ordersReceived > 0 ? (pendingOrders / ordersReceived) : 0;
+      
+      if (pendingRatio > 0.4) operationsInsights.push({ message: "⚠️ High pending orders → workload issue", type: "warning" });
+      if (ordersReceived > 0 && completionRate < 0.6) operationsInsights.push({ message: "⚠️ Low completion rate → efficiency issue", type: "warning" });
+      if (deliveryTimeAvg > 24) operationsInsights.push({ message: "⚠️ Delivery time increasing → slow operations", type: "warning" });
+      if (ordersCompleted > 0 && (defects / ordersCompleted) > 0.1) operationsInsights.push({ message: "⚠️ Defects increasing → quality issue", type: "warning" });
+      if (operationsInsights.length === 0) operationsInsights.push({ message: "✅ Operations running efficiently", type: "positive" });
+    } else {
+      operationsInsights.push({ message: "No operational constraints detected", type: "info" });
+    }
+
+    // 9. Category Aggregations Payload
+    const categoryAgg = await Transaction.aggregate([
+      { $match: { userId, type: "expense", date: { $gte: midTime, $lte: currentTime } } },
+      { $group: { _id: "$category", total: { $sum: "$amount" } } },
+      { $sort: { total: -1 } },
+      { $limit: 1 }
+    ]);
+    
+    let categoryInsights = [];
+    if (categoryAgg.length > 0) {
+      const topCategory = categoryAgg[0]._id;
+      categoryInsights.push({ message: `You spend most on ${topCategory || 'External Services'}`, type: "info" });
+      
+      const prevCategoryAgg = await Transaction.aggregate([
+        { $match: { userId, type: "expense", category: topCategory, date: { $gte: startTime, $lte: midTime } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]);
+      const prevTotal = prevCategoryAgg[0]?.total || 0;
+      const currTotal = categoryAgg[0].total;
+      const catChange = calculateTrend(currTotal, prevTotal);
+
+      if (catChange > 0) {
+        categoryInsights.push({ message: `${topCategory || 'Category'} expenses increased by ${catChange.toFixed(0)}%`, type: "warning" });
+      } else if (catChange < 0) {
+        categoryInsights.push({ message: `${topCategory || 'Category'} expenses decreased by ${Math.abs(catChange).toFixed(0)}%`, type: "positive" });
+      }
+    } else {
+      categoryInsights.push({ message: "No heavy spending categories detected.", type: "positive" });
+    }
+
+    // 10. Cashflow Payload
+    const totalAgg = await Transaction.aggregate([
+      { $match: { userId } },
+      { $group: {
+          _id: null,
+          totalIn: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+          totalOut: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
+      }}
+    ]);
+    const balance = (totalAgg[0]?.totalIn || 0) - (totalAgg[0]?.totalOut || 0);
+    const numDays = rangeMs / (24 * 60 * 60 * 1000) / 2 || 1; 
+    const avgDailyExpense = currentTotals.expense / numDays;
+    const daysLeft = avgDailyExpense > 0 ? (balance / avgDailyExpense) : 999;
+    
+    let cashflowInsights = [];
+    if (balance <= 0) {
+      cashflowInsights.push({ message: "⚠️ Negative or zero cash balance", type: "critical" });
+    } else if (daysLeft < 30) {
+      cashflowInsights.push({ message: `⚠️ Risk of running out of cash (approx. ${Math.floor(daysLeft)} days left)`, type: "warning" });
+    } else {
+      cashflowInsights.push({ message: `✅ Cash reserves will last for approx. ${Math.floor(daysLeft)} days`, type: "positive" });
+    }
+
+    // 11. Custom Predictions Payload
+    let predictions = [];
+    if (finalSummary.expenseTrend > 10) {
+      predictions.push({ message: "⚠️ If expenses continue increasing, profit may decrease next period.", type: "warning" });
+    }
+    if (finalSummary.ordersTrend > 5) {
+      predictions.push({ message: "📈 Orders likely to increase next week based on current demand trend.", type: "positive" });
+    }
+    if (finalSummary.revenueTrend < -5) {
+      predictions.push({ message: "📉 Revenue is cooling down. Consider promotional activities.", type: "info" });
+    }
+    if (predictions.length === 0) {
+      predictions.push({ message: "🚀 Consistent growth trajectory predicted if overheads remain stable.", type: "positive" });
+    }
+
+    // Complete Business Intelligence Response
     res.json({ 
-      trendData, 
-      summary: finalSummary, 
-      insights,
+      comparison,
+      trends: { trendData, summary: finalSummary, insights },
+      operations: { insights: operationsInsights },
+      categories: { insights: categoryInsights },
+      cashflow: { avgDailyExpense, daysLeft, insights: cashflowInsights },
+      predictions,
       executiveAdvisory 
     });
 
