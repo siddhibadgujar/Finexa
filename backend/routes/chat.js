@@ -2,12 +2,60 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Operation = require('../models/Operation');
 
+/**
+ * Generates a rule-based response based on context data and user question
+ */
+function getRuleBasedResponse(question, data) {
+  const q = question.toLowerCase();
+  
+  const responses = {
+    profit: [
+      `Your current net profit is ₹${data.profit.toLocaleString()}. With total income at ₹${data.totalIncome.toLocaleString()} and expenses at ₹${data.totalExpense.toLocaleString()}, you are in a ${data.profit > 0 ? 'good position' : 'challenging phase'}.`,
+      `Analysis shows a profit of ₹${data.profit.toLocaleString()}. I suggest focusing on ${data.topCategory} to further optimize your margins.`,
+      `You've generated ₹${data.profit.toLocaleString()} in profit so far. Keeping an eye on your ₹${data.totalExpense.toLocaleString()} total expenses will help maintain this.`
+    ],
+    expense: [
+      `Your biggest expense category is "${data.topCategory}", accounting for a significant portion of your ₹${data.totalExpense.toLocaleString()} total spending.`,
+      `Most of your spending (₹${data.totalExpense.toLocaleString()}) is directed towards ${data.topCategory}. Reducing costs here could boost your profit.`,
+      `Spending alert: You have spent ₹${data.totalExpense.toLocaleString()} in total, with ${data.topCategory} being the primary driver.`
+    ],
+    business: [
+      `Overall performance: You're ${data.profit > 0 ? 'profitable' : 'running at a loss'}. Your operations show ${data.pendingOrders} pending orders and an inventory level of ${data.inventoryLevel}.`,
+      `Business Summary: Revenue is ₹${data.totalIncome.toLocaleString()} vs Expenses of ₹${data.totalExpense.toLocaleString()}. Current efficiency is ${data.completionRate}% in order fulfillment.`,
+      `Your business health is ${data.profit > data.totalIncome * 0.2 ? 'excellent' : 'stable'}. Focus on maintaining sales while controlling "${data.topCategory}" expenses.`
+    ],
+    orders: [
+      `You have ${data.pendingOrders} orders pending. Your current order completion rate is ${data.completionRate}%.`,
+      `Operations Update: ${data.ordersCompleted} out of ${data.ordersReceived} orders completed today. ${data.pendingOrders} are still in queue.`,
+      `Order Flow: Completion rate is ${data.completionRate}%. I recommend prioritizing the ${data.pendingOrders} pending tasks.`
+    ],
+    inventory: [
+      `Current inventory level is ${data.inventoryLevel} units. ${data.inventoryLevel < 50 ? 'I recommend restocking soon to avoid stockouts.' : 'Your stock levels look healthy for now.'}`,
+      `Stock Status: ${data.inventoryLevel} items in hand. Based on your "${data.topCategory}" spending, ensure your supply chain remains efficient.`,
+      `Inventory Check: ${data.inventoryLevel} units available. Keep monitoring this to match your order volume of ${data.ordersReceived}.`
+    ],
+    default: [
+      "I analyzed your business data. You can improve performance by controlling expenses and improving efficiency.",
+      "Finexa AI here. Looking at your data, focusing on reducing costs in your top categories could significantly increase your margins.",
+      "I recommend reviewing your recent transactions to identify potential savings and improve your overall business health."
+    ]
+  };
 
+  const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  if (q.includes('profit')) return getRandom(responses.profit);
+  if (q.includes('expense') || q.includes('spending')) return getRandom(responses.expense);
+  if (q.includes('business') || q.includes('performance') || q.includes('how')) return getRandom(responses.business);
+  if (q.includes('order')) return getRandom(responses.orders);
+  if (q.includes('inventory') || q.includes('stock')) return getRandom(responses.inventory);
+  
+  return getRandom(responses.default);
+}
 
 // @route   POST /api/chat
-// @desc    Chat with AI business assistant
+// @desc    Chat with rule-based business assistant
 router.post('/', auth, async (req, res) => {
   const { question } = req.body;
   
@@ -16,135 +64,63 @@ router.post('/', auth, async (req, res) => {
   }
 
   try {
-    // Initialize Gemini with the current environment variable
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy_key");
-    
-    // 1. Fetch user data for context
-    const transactions = await Transaction.find({ userId: req.user.id }).sort({ date: -1 });
-    
-    let totalRevenue = 0, totalExpense = 0, itemsSold = 0, ordersReceived = 0, ordersCompleted = 0, pendingOrders = 0;
-    
-    transactions.forEach(t => {
-      if (t.type === 'income') totalRevenue += t.amount;
-      else totalExpense += t.amount;
-      itemsSold += (t.itemsSold || 0);
-      ordersReceived += (t.ordersReceived || 0);
-      ordersCompleted += (t.ordersCompleted || 0);
-      pendingOrders += (t.pendingOrders || 0);
-    });
+    const userId = req.user.id;
 
-    const profit = totalRevenue - totalExpense;
-
-    // 2. Construct Prompt
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // 1. Fetch Transactions
+    const transactions = await Transaction.find({ userId }).sort({ date: -1 });
     
-    const prompt = `
-    You are a smart business assistant for small business owners using the Finexa platform.
-    
-    Based on this user's business data:
-    - Total Income: ₹${totalRevenue}
-    - Total Expense: ₹${totalExpense}
-    - Net Profit: ₹${profit}
-    - Items Sold: ${itemsSold}
-    - Orders Received: ${ordersReceived}
-    - Orders Completed: ${ordersCompleted}
-    - Pending Orders: ${pendingOrders}
-    
-    The user's question: "${question}"
-    
-    INSTRUCTIONS:
-    - Answer the question in the SAME language as the user (English, Hindi, or Marathi).
-    - Keep the answer simple, professional, and actionable.
-    - If the user asks for advice, use the data provided to give specific suggestions.
-    - If you cannot answer based on data, give general business advice.
-    - Reply in the same language as the question.
-    `;
-
-    // 3. Call Gemini API
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-
-    res.json({ answer: responseText });
-
-  } catch (error) {
-    console.error('DETAILED Gemini API Error:', error);
-    
-    // 4. Robust Fallback Logic (Rule-Based & Data-Driven)
-    function getFallbackResponse(question, data) {
-      const q = question.toLowerCase();
-      
-      const rules = {
-        profit: [
-          `Your profit is ₹${data.profit}. It is low due to high expenses, especially in ${data.topCategory || 'General'}.`,
-          `Current net profit stands at ₹${data.profit}. Controlling costs in ${data.topCategory} could improve this.`,
-          `You've earned ₹${data.profit} in profit. I recommend reviewing ${data.topCategory} spending.`
-        ],
-        expense: [
-          `You are spending most of your money on ${data.topCategory || 'General'}. Consider reducing unnecessary costs.`,
-          `Highest spending is in ${data.topCategory}. Total expenses are ₹${data.totalExpense}.`,
-          `Your biggest expense category is ${data.topCategory}. Keeping an eye here will help your margins.`
-        ],
-        status: [
-          `Your business is currently ${data.status}. However, expenses are ${data.expenseTrend} and profit is ${data.profitTrend}.`,
-          `Performance check: Business is ${data.status}. Revenue is ₹${data.totalRevenue} vs ₹${data.totalExpense} in costs.`,
-          `Currently, you are ${data.status}. Increasing efficiency in operations could boost your ${data.profitTrend} profit.`
-        ],
-        orders: [
-          `You have ${data.pendingOrders} pending orders and a completion rate of ${data.completionRate}%.`,
-          `Order status: ${data.ordersCompleted}/${data.ordersReceived} completed. Completion rate is ${data.completionRate}%.`,
-          `Operations update: ${data.pendingOrders} orders still need attention. Overall rate: ${data.completionRate}%.`
-        ],
-        inventory: [
-          `Your current inventory sales level is ${data.itemsSold} units. Consider restocking if demand is high.`,
-          `Stock update: You have moved ${data.itemsSold} items. Monitor your supply chain closely.`,
-          `Sales data: ${data.itemsSold} units sold. Keep an eye on inventory for upcoming busy periods.`
-        ],
-        default: [
-          `I analyzed your business data. You can improve performance by controlling expenses and increasing efficiency.`,
-          `AI is currently sleeping, but looking at your data, focusing on ${data.topCategory} might be a good move.`,
-          `I'm here to help! Based on your ₹${data.profit} profit, your business is showing interesting patterns.`
-        ]
-      };
-
-      const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-      if (q.includes('profit')) return getRandom(rules.profit);
-      if (q.includes('expense') || q.includes('spending')) return getRandom(rules.expense);
-      if (q.includes('business') || q.includes('performance') || q.includes('how')) return getRandom(rules.status);
-      if (q.includes('order')) return getRandom(rules.orders);
-      if (q.includes('inventory') || q.includes('stock')) return getRandom(rules.inventory);
-      
-      return getRandom(rules.default);
-    }
-
-    // Prepare fallback data
+    let totalIncome = 0;
+    let totalExpense = 0;
     const categoryTotals = {};
+
     transactions.forEach(t => {
-      if (t.type === 'expense') {
+      if (t.type === 'income') {
+        totalIncome += t.amount;
+      } else {
+        totalExpense += t.amount;
         categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
       }
     });
-    
-    const topCategory = Object.entries(categoryTotals).sort((a,b) => b[1] - a[1])[0]?.[0] || "General";
-    const completionRate = Math.round((ordersCompleted / (ordersReceived || 1)) * 100);
-    const status = profit > 0 ? "profitable" : profit < 0 ? "running at a loss" : "breaking even";
-    const expenseTrend = totalExpense > totalRevenue * 0.7 ? "high" : "moderate";
-    const profitTrend = profit > 0 ? "positive" : "stable";
 
-    const fallbackData = {
-      totalRevenue, totalExpense, profit, itemsSold, 
-      ordersReceived, ordersCompleted, pendingOrders,
-      topCategory, completionRate, status, expenseTrend, profitTrend
+    const topCategory = Object.entries(categoryTotals).sort((a,b) => b[1] - a[1])[0]?.[0] || "General";
+    const profit = totalIncome - totalExpense;
+
+    // 2. Fetch Latest Operational Metrics
+    const latestOp = await Operation.findOne({ userId }).sort({ date: -1 });
+    const opMetrics = latestOp ? latestOp.metrics : { 
+      pendingOrders: 0, ordersCompleted: 0, ordersReceived: 0, inventoryLevel: 0 
     };
 
-    const fallbackText = getFallbackResponse(question, fallbackData);
+    const completionRate = Math.round((opMetrics.ordersCompleted / (opMetrics.ordersReceived || 1)) * 100);
+
+    // 3. Generate Rule-Based Response
+    const contextData = {
+      totalIncome,
+      totalExpense,
+      profit,
+      topCategory,
+      pendingOrders: opMetrics.pendingOrders,
+      ordersCompleted: opMetrics.ordersCompleted,
+      ordersReceived: opMetrics.ordersReceived,
+      inventoryLevel: opMetrics.inventoryLevel,
+      completionRate
+    };
+
+    const reply = getRuleBasedResponse(question, contextData);
 
     res.json({ 
-        answer: fallbackText, 
-        source: "fallback",
-        error_context: error.message 
+      reply, 
+      source: "rule-based" 
+    });
+
+  } catch (error) {
+    console.error('Rule-based Chat Error:', error);
+    res.status(500).json({ 
+      reply: "I'm having trouble analyzing your data right now. Please try again later.",
+      source: "error"
     });
   }
 });
 
 module.exports = router;
+

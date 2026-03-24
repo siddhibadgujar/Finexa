@@ -97,11 +97,11 @@ const Chatbot = () => {
 
       const botMessage = { 
         role: 'assistant', 
-        text: res.data.answer,
+        text: res.data.reply,
         source: res.data.source
       };
       setMessages(prev => [...prev, botMessage]);
-      speak(res.data.answer);
+      speak(res.data.reply);
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I am having trouble connecting.' }]);
@@ -125,7 +125,6 @@ const Chatbot = () => {
           className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 transition-all group relative"
         >
           <MessageSquare size={30} />
-          <div className="absolute -top-2 -right-2 bg-red-500 text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">AI</div>
           <div className="absolute right-full mr-4 bg-white text-gray-800 px-4 py-2 rounded-xl text-sm font-bold shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             Ask Finexa AI
           </div>
@@ -146,7 +145,7 @@ const Chatbot = () => {
                 <h3 className="font-black text-lg">Finexa Assistant</h3>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Active Intelligence</span>
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Always Online</span>
                 </div>
               </div>
             </div>
@@ -173,10 +172,10 @@ const Chatbot = () => {
                   : 'bg-white text-gray-800 rounded-tl-none shadow-sm border border-gray-100'
                 }`}>
                   {msg.text}
-                  {msg.source === 'fallback' && (
+                  {(msg.source === 'rule-based' || msg.source === 'fallback') && (
                     <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1.5 text-[10px] font-bold text-amber-600 uppercase tracking-tighter">
                       <Zap size={10} fill="currentColor" />
-                      Quick analysis (AI unavailable)
+                      ⚡ Quick analysis
                     </div>
                   )}
                 </div>
@@ -199,7 +198,7 @@ const Chatbot = () => {
               <button 
                 key={q}
                 onClick={() => handleSend(q)}
-                className="whitespace-nowrap bg-white border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all"
+                className="whitespace-nowrap bg-white border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-all font-sans"
               >
                 {q}
               </button>
@@ -218,7 +217,7 @@ const Chatbot = () => {
               <input 
                 type="text" 
                 placeholder={isListening ? 'Listening...' : "Ask anything..."}
-                className="flex-1 bg-transparent border-none outline-none px-2 font-medium text-gray-700 placeholder:text-gray-400"
+                className="flex-1 bg-transparent border-none outline-none px-2 font-medium text-gray-700 placeholder:text-gray-400 font-sans"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
@@ -231,7 +230,7 @@ const Chatbot = () => {
                 <Send size={20} />
               </button>
             </div>
-            <p className="text-[10px] text-center text-gray-400 mt-2 font-bold uppercase tracking-widest">Powered by Finexa Intelligence</p>
+            <p className="text-[10px] text-center text-gray-400 mt-2 font-bold uppercase tracking-widest">Powered by Finexa Data Analysis</p>
           </div>
 
         </div>
@@ -241,3 +240,4 @@ const Chatbot = () => {
 };
 
 export default Chatbot;
+
