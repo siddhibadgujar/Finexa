@@ -277,7 +277,28 @@ exports.getAnalysis = async (req, res) => {
       categoryInsights.push({ message: "No heavy spending categories detected.", type: "positive" });
     }
 
-    // 10. Cashflow Payload
+    // 10. Performance Indicators Payload
+    const perfOpsArr = await Operation.aggregate([
+      { $match: { userId, date: { $gte: midTime, $lte: currentTime } } },
+      { $group: { 
+          _id: null, 
+          received: { $sum: "$metrics.ordersReceived" },
+          completed: { $sum: "$metrics.ordersCompleted" },
+          pending: { $sum: { $ifNull: ["$metrics.pendingOrders", 0] } },
+          deliveryTime: { $avg: "$metrics.deliveryTimeAvg" },
+          defects: { $sum: "$metrics.defects" }
+      }}
+    ]);
+    const p = perfOpsArr[0] || { received: 0, completed: 0, pending: 0, deliveryTime: 0, defects: 0 };
+    const efficiencyNum = p.received > 0 ? p.completed / p.received : 0;
+    const performance = {
+      efficiency: efficiencyNum > 0.8 ? "Good" : efficiencyNum > 0.5 ? "Average" : "Poor",
+      workload: p.pending > (p.received * 0.4) ? "High" : "Low",
+      quality: p.defects > 0 ? "Issue" : "Good",
+      delivery: (p.deliveryTime || 0) <= 24 ? "Fast" : "Slow"
+    };
+
+    // 11. Refined Cashflow Payload
     const totalAgg = await Transaction.aggregate([
       { $match: { userId } },
       { $group: {
@@ -287,20 +308,15 @@ exports.getAnalysis = async (req, res) => {
       }}
     ]);
     const balance = (totalAgg[0]?.totalIn || 0) - (totalAgg[0]?.totalOut || 0);
-    const numDays = rangeMs / (24 * 60 * 60 * 1000) / 2 || 1; 
-    const avgDailyExpense = currentTotals.expense / numDays;
+    const rangeDays = rangeMs / (24 * 60 * 60 * 1000);
+    const avgDailyExpense = currentTotals.expense / (rangeDays / 2); // for the current half-period
     const daysLeft = avgDailyExpense > 0 ? (balance / avgDailyExpense) : 999;
     
-    let cashflowInsights = [];
-    if (balance <= 0) {
-      cashflowInsights.push({ message: "⚠️ Negative or zero cash balance", type: "critical" });
-    } else if (daysLeft < 30) {
-      cashflowInsights.push({ message: `⚠️ Risk of running out of cash (approx. ${Math.floor(daysLeft)} days left)`, type: "warning" });
-    } else {
-      cashflowInsights.push({ message: `✅ Cash reserves will last for approx. ${Math.floor(daysLeft)} days`, type: "positive" });
-    }
+    let cashStatus = "💰 Healthy cash flow";
+    if (daysLeft < 7) cashStatus = "🚨 Risk of running out of cash";
+    else if (daysLeft < 20) cashStatus = "⚠️ Moderate cash stability";
 
-    // 11. Custom Predictions Payload
+    // 12. Custom Predictions Payload
     let predictions = [];
     if (finalSummary.expenseTrend > 10) {
       predictions.push({ message: "⚠️ If expenses continue increasing, profit may decrease next period.", type: "warning" });
@@ -321,7 +337,8 @@ exports.getAnalysis = async (req, res) => {
       trends: { trendData, summary: finalSummary, insights },
       operations: { insights: operationsInsights },
       categories: { insights: categoryInsights },
-      cashflow: { avgDailyExpense, daysLeft, insights: cashflowInsights },
+      performance,
+      cashflow: { avgDailyExpense, daysLeft, status: cashStatus },
       predictions,
       executiveAdvisory 
     });
@@ -404,7 +421,35 @@ exports.getDashboardTrends = async (req, res) => {
       }
     }
 
-    res.json({ insights: insights.slice(0, 4) });
+    // Performance Indicators Logic
+    const latestOp = await Operation.findOne({ userId }).sort({ date: -1 });
+    let performance = {
+      efficiency: "N/A",
+      workload: "N/A",
+      quality: "N/A",
+      delivery: "N/A"
+    };
+
+    if (latestOp) {
+      const { 
+        ordersReceived = 0, 
+        ordersCompleted = 0, 
+        pendingOrders = 0, 
+        deliveryTimeAvg = 0, 
+        defects = 0 
+      } = latestOp.metrics || {};
+
+      const efficiencyRatio = ordersReceived > 0 ? (ordersCompleted / ordersReceived) : 0;
+      if (efficiencyRatio > 0.8) performance.efficiency = "Good";
+      else if (efficiencyRatio > 0.5) performance.efficiency = "Average";
+      else performance.efficiency = "Poor";
+
+      performance.workload = pendingOrders > (ordersReceived * 0.4) ? "High" : "Low";
+      performance.quality = defects > 0 ? "Issue" : "Good";
+      performance.delivery = deliveryTimeAvg <= 2 ? "Fast" : "Slow";
+    }
+
+    res.json({ insights: insights.slice(0, 4), performance });
 
   } catch (err) {
     console.error("Trend API error:", err);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { TrendingUp, BarChart3, Clock, AlertCircle } from 'lucide-react';
+import { TrendingUp, BarChart3, Clock, AlertCircle, Zap, Activity, ShieldCheck, Truck } from 'lucide-react';
 import SummaryCard from '../components/analysis/SummaryCard';
 import TrendChart from '../components/analysis/TrendChart';
 import DateFilter from '../components/analysis/DateFilter';
@@ -13,6 +13,7 @@ const Analysis = () => {
     const [data, setData] = useState({});
     const [patterns, setPatterns] = useState([]);
     const [trendInsights, setTrendInsights] = useState([]);
+    const [performanceStatus, setPerformanceStatus] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -81,9 +82,11 @@ const Analysis = () => {
         .then(res => res.json())
         .then(data => {
             setTrendInsights(data.insights || []);
+            setPerformanceStatus(data.performance);
         })
         .catch(() => {
             setTrendInsights([]);
+            setPerformanceStatus(null);
         });
     }, [range, groupBy]);
 
@@ -104,6 +107,7 @@ const Analysis = () => {
     );
 
     const { comparison = {}, trends = {}, operations = {}, categories = {}, cashflow = {}, predictions = [], executiveAdvisory } = data;
+    const perfDisplay = performanceStatus || data.performance || {};
     const { trendData = [], summary = {}, insights = [] } = trends;
 
     const getPriorityColor = (priority) => {
@@ -151,101 +155,104 @@ const Analysis = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Comparison Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {/* 1. Main Graph */}
+                    <div className="mt-4">
+                      <TrendChart 
+                        data={trendData} 
+                        title={`Real-Time Performance Trends (${range.toUpperCase()})`} 
+                      />
+                    </div>
+
+                    {/* 2. Performance Indicators */}
+                    <div className="mt-8">
+                        <h3 className="text-xl font-black text-gray-800 mb-6 flex items-center gap-2">
+                             <Activity className="text-indigo-600" size={24} /> Performance Indicators
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                                { label: 'Efficiency', value: perfDisplay.efficiency, icon: Zap, color: perfDisplay.efficiency === 'Good' ? 'text-green-600 bg-green-50' : perfDisplay.efficiency === 'Average' ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50' },
+                                { label: 'Workload', value: perfDisplay.workload, icon: BarChart3, color: perfDisplay.workload === 'Low' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' },
+                                { label: 'Quality', value: perfDisplay.quality, icon: ShieldCheck, color: perfDisplay.quality === 'Good' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' },
+                                { label: 'Delivery', value: perfDisplay.delivery, icon: Truck, color: perfDisplay.delivery === 'Fast' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' }
+                            ].map((item, idx) => (
+                                <div key={idx} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                                    <div className={`p-3 rounded-2xl ${item.color.split(' ')[1]} ${item.color.split(' ')[0]}`}>
+                                        <item.icon size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">{item.label}</p>
+                                        <p className={`text-xl font-black ${item.color.split(' ')[0]}`}>{item.value || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 3. Trend Insights */}
+                    <div className="mt-8 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                        <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2 text-xl">
+                            <TrendingUp className="text-indigo-600" size={24} /> Dynamic Trend Insights
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {trendInsights.length > 0 ? (
+                                trendInsights.map((item, index) => (
+                                <div key={index} className="p-4 rounded-2xl border bg-gray-50 border-gray-100 text-gray-700 text-sm font-bold shadow-sm transition-all hover:bg-white hover:border-indigo-100">
+                                    {item.message}
+                                </div>
+                                ))
+                            ) : (
+                                <p className="text-gray-500 text-sm font-medium italic col-span-full">
+                                Not enough data to generate trends
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 4. Comparison Cards */}
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <SummaryCard title="Income Change" trend={comparison.incomeChange || 0} suffix="%" />
                         <SummaryCard title="Expense Change" trend={comparison.expenseChange || 0} suffix="%" />
                         <SummaryCard title="Profit Change" trend={comparison.profitChange || 0} suffix="%" />
                     </div>
 
-                    {/* Main Chart */}
-                    <div className="mt-8">
-                      <TrendChart 
-                        data={trendData} 
-                        title={`Performance Trends (${range.toUpperCase()} / ${groupBy.toUpperCase()})`} 
-                      />
-                    </div>
-
-                    {/* Insights & Advisory Section */}
+                    {/* 5, 6 & Advisory. Category Analysis, Operational Patterns & Executive Advisory */}
                     <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-8">
-                          {/* Top row insights */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Category Analysis */}
                             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">📈 Trend Insights</h3>
-                              <div className="space-y-3">
-                                {trendInsights.length > 0 ? (
-                                  trendInsights.map((item, index) => (
-                                    <div key={index} className="p-3.5 rounded-xl border bg-gray-50 border-gray-100 text-gray-700 text-sm font-medium">
-                                      {item.message}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <p className="text-gray-500 text-sm font-medium italic">
-                                    Not enough data to generate trends
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">🔮 Future Predictions</h3>
-                              <div className="space-y-3">
-                                {predictions.map((i, idx) => (
-                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
-                                    {i.message}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Middle row insights */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">⚙️ Operational Patterns</h3>
-                              <div className="space-y-3">
-                                {patterns && patterns.length > 0 && patterns[0].message !== "No operational patterns available" ? (
-                                  patterns.map((item, i) => (
-                                    <div key={i} className="pattern-card p-3.5 rounded-xl border bg-yellow-50 border-yellow-100 text-yellow-800 text-sm font-medium">
-                                      {item.message}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <div className="text-[12px] text-gray-500 italic">No operational patterns available</div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">📊 Category Tracking</h3>
-                              <div className="space-y-3">
+                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                                    <BarChart3 className="text-indigo-600" size={20} /> Category Analysis
+                                </h3>
+                                <div className="space-y-3">
                                 {(categories.insights || []).map((i, idx) => (
-                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
+                                    <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
                                     {i.message}
-                                  </div>
+                                    </div>
                                 ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Bottom cash row */}
-                          <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                              <h3 className="font-bold text-gray-800 flex items-center gap-2">💸 Cash Flow Intelligence</h3>
-                              <div className="text-gray-500 text-xs font-bold uppercase tracking-wider bg-gray-50 px-3 py-1.5 rounded-lg">
-                                Avg Burn Rate: ₹{(cashflow.avgDailyExpense || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}/day
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              {(cashflow.insights || []).map((i, idx) => (
-                                <div key={idx} className={`p-4 rounded-xl border text-sm font-bold ${i.type === 'critical' ? 'bg-red-50 border-red-100 text-red-800' : i.type === 'warning' ? 'bg-yellow-50 border-yellow-100 text-yellow-800' : 'bg-green-50 border-green-100 text-green-800'}`}>
-                                  {i.message}
                                 </div>
-                              ))}
                             </div>
-                          </div>
+
+                            {/* Operational Patterns */}
+                            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                                    <Clock className="text-indigo-600" size={20} /> Operational Patterns
+                                </h3>
+                                <div className="space-y-3">
+                                {patterns && patterns.length > 0 && patterns[0].message !== "No operational patterns available" ? (
+                                    patterns.map((item, i) => (
+                                    <div key={i} className="pattern-card p-3.5 rounded-xl border bg-yellow-50 border-yellow-100 text-yellow-800 text-sm font-medium">
+                                        {item.message}
+                                    </div>
+                                    ))
+                                ) : (
+                                    <div className="text-[12px] text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100">No operational patterns available</div>
+                                )}
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group lg:col-span-1 h-fit">
+                        {/* Executive Advisory */}
+                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group h-fit">
                             <div className="absolute top-0 right-0 p-4">
                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-xl ${getPriorityColor(executiveAdvisory?.priority)}`}>
                                     Priority: {executiveAdvisory?.priority}
@@ -260,7 +267,6 @@ const Analysis = () => {
                             </div>
                             
                             <div className="space-y-6">
-                                {/* Health Status */}
                                 <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100">
                                     <p className="text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-1">Business Health</p>
                                     <p className="font-bold text-gray-800 leading-relaxed text-sm">
@@ -268,9 +274,7 @@ const Analysis = () => {
                                     </p>
                                 </div>
 
-                                {/* Dynamic Cards Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    {/* Warnings */}
+                                <div className="grid grid-cols-1 gap-3">
                                     {executiveAdvisory?.warnings?.length > 0 && executiveAdvisory.warnings.map((w, i) => (
                                         <div key={i} className="p-4 bg-red-50 border border-red-100 rounded-2xl">
                                             <p className="text-[8px] font-black text-red-600 uppercase mb-1 tracking-widest">Warning</p>
@@ -278,19 +282,10 @@ const Analysis = () => {
                                         </div>
                                     ))}
                                     
-                                    {/* Suggestions */}
                                     {executiveAdvisory?.suggestions?.length > 0 && executiveAdvisory.suggestions.map((s, i) => (
                                         <div key={i} className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                                            <p className="text-[8px] font-black text-blue-600 uppercase mb-1 tracking-widest">Actionable Suggestion</p>
+                                            <p className="text-[8px] font-black text-blue-600 uppercase mb-1 tracking-widest">Suggestion</p>
                                             <p className="text-[11px] font-bold text-blue-800 leading-tight">{s}</p>
-                                        </div>
-                                    ))}
-
-                                    {/* Opportunities */}
-                                    {executiveAdvisory?.opportunities?.length > 0 && executiveAdvisory.opportunities.map((o, i) => (
-                                        <div key={i} className="p-4 bg-green-50 border border-green-100 rounded-2xl">
-                                            <p className="text-[8px] font-black text-green-600 uppercase mb-1 tracking-widest">Growth Opportunity</p>
-                                            <p className="text-[11px] font-bold text-green-800 leading-tight">{o}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -299,6 +294,33 @@ const Analysis = () => {
                             <button onClick={downloadReport} className="w-full mt-8 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-[10px]">
                                 Download Strategic Report
                             </button>
+                        </div>
+                    </div>
+
+                    {/* 7. Cash Flow Intelligence */}
+                    <div className="mt-8 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm mb-10">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h3 className="text-xl font-black text-gray-800 flex items-center gap-2">💸 Cash Flow Intelligence</h3>
+                            <div className="text-gray-500 text-xs font-bold uppercase tracking-wider bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+                            Avg Burn Rate: ₹{(cashflow.avgDailyExpense || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}/day
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className={`p-6 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-6 transition-all ${cashflow.daysLeft < 7 ? 'bg-red-50 border-red-100' : cashflow.daysLeft < 20 ? 'bg-yellow-50 border-yellow-100' : 'bg-green-50 border-green-100'}`}>
+                            <div className="flex items-center gap-4">
+                                <div className={`p-4 rounded-2xl bg-white/60 shadow-sm`}>
+                                <Clock size={28} className={cashflow.daysLeft < 7 ? 'text-red-600' : cashflow.daysLeft < 20 ? 'text-yellow-600' : 'text-green-600'} />
+                                </div>
+                                <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Cash Sustainability Status</p>
+                                <p className="text-xl font-black">{cashflow.status}</p>
+                                </div>
+                            </div>
+                            <div className="text-right bg-white/40 p-4 rounded-2xl border border-white/60">
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Cash will last approximately</p>
+                                <p className="text-3xl font-black">{Math.floor(cashflow.daysLeft || 0)} Days</p>
+                            </div>
+                            </div>
                         </div>
                     </div>
                   </>
