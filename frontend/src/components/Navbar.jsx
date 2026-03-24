@@ -33,6 +33,7 @@ const Navbar = () => {
           <div className="flex items-center gap-6 ml-8">
             <Link to="/dashboard" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">Dashboard</Link>
             <Link to="/analysis" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">Trend Analysis</Link>
+            <Link to="/anomaly" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors text-red-500">Anomaly (ML)</Link>
           </div>
 
           <div className="flex-1"></div>

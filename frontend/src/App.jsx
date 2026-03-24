@@ -5,6 +5,7 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import SetupBusiness from './pages/SetupBusiness';
 import Analysis from './pages/Analysis';
+import Anomaly from './pages/Anomaly';
 
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
   const token = localStorage.getItem('token');
@@ -43,6 +44,11 @@ function App() {
             <Route path="/analysis" element={
               <ProtectedRoute>
                 <Analysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/anomaly" element={
+              <ProtectedRoute>
+                <Anomaly />
               </ProtectedRoute>
             } />
             <Route path="/" element={<Navigate to="/dashboard" />} />
