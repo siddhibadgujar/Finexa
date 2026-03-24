@@ -25,17 +25,28 @@ const Chatbot = () => {
   const recognition = Recognition ? new Recognition() : null;
   const triggerRecRef = useRef(null);
 
+  const greetingText = "Hello! I am Finexa, your AI business assistant. How can I help you today?";
+
   if (recognition) {
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true; // Enable live feedback
     
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setIsListening(false);
-      handleSend(transcript, true); // true indicates voice session
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          setIsListening(false);
+          handleSend(transcript, true);
+        } else {
+          interimTranscript += transcript;
+          setInput(interimTranscript); // Show live text
+        }
+      }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (err) => {
+      console.error("Recognition error:", err.error);
       setIsListening(false);
       startTrigger();
     };
@@ -65,13 +76,16 @@ const Chatbot = () => {
                            transcript.includes('finish') || transcript.includes('assistant') || transcript.includes('buddy') ||
                            transcript.includes('help');
         
-        if (hasFinexa || (hasHey && (hasFinexa || transcript.includes('assistant') || transcript.includes('buddy')))) {
+        if (hasFinexa || (hasHey && hasFinexa)) {
           console.log("Finexa: Wake word detected! Opening chat...");
-          window.alert("Voice Trigger Detected!"); // Explicit HUD debug
-          playBeep();
-          setIsOpen(true);
+          window.alert("Matched: " + (hasFinexa ? "Finexa/Assistant word" : "Hey phrase")); // Final debug HUD
           stopTrigger();
-          startListening();
+          setIsOpen(true);
+          // Play greeting then start listening automatically
+          speak(greetingText, () => {
+            console.log("Greeting finished or failed. Starting to listen...");
+            startListening();
+          });
         }
       }
     };
@@ -98,14 +112,13 @@ const Chatbot = () => {
       triggerRecRef.current = tr;
     } catch (e) {
       console.error("Finexa Trigger Start Error:", e);
+      triggerRecRef.current = null;
     }
   };
 
   const stopTrigger = () => {
     if (triggerRecRef.current) {
-      try {
-        triggerRecRef.current.stop();
-      } catch (e) {}
+      try { triggerRecRef.current.stop(); } catch (e) {}
       triggerRecRef.current = null;
     }
   };
@@ -115,14 +128,11 @@ const Chatbot = () => {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
-
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
-
       oscillator.start();
       oscillator.stop(audioCtx.currentTime + 0.1);
     } catch (e) {}
@@ -152,6 +162,7 @@ const Chatbot = () => {
 
     if (onEndCallback) {
       utterance.onend = () => onEndCallback();
+      utterance.onerror = () => onEndCallback();
     }
     
     window.speechSynthesis.speak(utterance);
@@ -250,7 +261,10 @@ const Chatbot = () => {
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => setVoiceEnabled(!voiceEnabled)}
+                onClick={() => {
+                  if (voiceEnabled) window.speechSynthesis.cancel();
+                  setVoiceEnabled(!voiceEnabled);
+                }}
                 className={`p-2 rounded-lg transition-colors ${voiceEnabled ? 'bg-white/20 text-white' : 'text-white/40'}`}
               >
                 {voiceEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
