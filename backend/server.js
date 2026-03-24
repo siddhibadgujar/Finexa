@@ -18,6 +18,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/operations', require('./routes/operations'));
 app.use('/api/analysis', require('./routes/analysis'));
 app.use('/api/report', require('./routes/report'));
+app.use('/api/anomaly', require('./routes/anomaly'));
 //app.use('/api/chat', require('./routes/chat'));
 
 // Sample Route

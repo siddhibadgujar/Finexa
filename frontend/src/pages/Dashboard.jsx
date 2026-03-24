@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { IndianRupee, TrendingDown, TrendingUp, Wallet, ArrowDown, ArrowUp, Plus, Minus, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { IndianRupee, TrendingDown, TrendingUp, Wallet, ArrowDown, ArrowUp, Plus, Minus, ChevronDown, ChevronUp, Zap, AlertCircle } from 'lucide-react';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import QuickActions from '../components/dashboard/QuickActions';
 import ChartSection from '../components/dashboard/ChartSection';
@@ -19,7 +20,8 @@ const Dashboard = () => {
     },
     charts: { pieChartData: [], lineChartData: [] },
     insights: [],
-    opInsights: []
+    opInsights: [],
+    anomalies: []
   });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,16 +44,18 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      const [txRes, insightsRes, catRes, opInsightsRes] = await Promise.all([
+      const [txRes, insightsRes, catRes, opInsightsRes, anomalyRes] = await Promise.all([
         axios.get('http://localhost:5555/api/transactions', config),
         axios.get('http://localhost:5555/api/insights', config),
         axios.get('http://localhost:5555/api/categories', config),
-        axios.get('http://localhost:5555/api/operations/analysis', config)
+        axios.get('http://localhost:5555/api/operations/analysis', config),
+        axios.get('http://localhost:5555/api/anomaly', config)
       ]);
       setData({
         ...txRes.data,
         insights: insightsRes.data,
-        opInsights: opInsightsRes.data
+        opInsights: opInsightsRes.data,
+        anomalies: anomalyRes.data.anomalies || []
       });
       setCategories(catRes.data);
       
@@ -180,6 +184,29 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-finexa-text tracking-tight capitalize">{businessName} Overview</h1>
           <p className="text-finexa-muted mt-1">Here's your business at a glance today.</p>
         </div>
+
+        {/* Anomaly Alert Alert */}
+        {data.anomalies?.filter(a => a.anomaly === 1).length > 0 && (
+          <Link 
+            to="/anomaly"
+            className="flex items-center justify-between bg-red-50 border-2 border-red-100 p-4 rounded-2xl hover:bg-red-100 transition-all group animate-pulse"
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-red-500 p-2 rounded-full">
+                <AlertCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-red-900 font-bold">
+                  {data.anomalies.filter(a => a.anomaly === 1).length} Unusual Transaction{data.anomalies.filter(a => a.anomaly === 1).length > 1 ? 's' : ''} Detected
+                </p>
+                <p className="text-red-700 text-sm">Our ML model has identified potential risks in your recent cashflow. Review now.</p>
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-all">
+              <span className="text-xs font-bold uppercase tracking-wider px-2">Review</span>
+            </div>
+          </Link>
+        )}
 
         {/* Top Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
