@@ -49,6 +49,7 @@ const Chatbot = () => {
     if (!Recognition || isListening) return;
     if (triggerRecRef.current) return;
 
+    console.log("Finexa: Starting voice trigger recognition...");
     const tr = new Recognition();
     tr.continuous = true;
     tr.interimResults = true;
@@ -56,7 +57,10 @@ const Chatbot = () => {
     tr.onresult = (event) => {
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript.toLowerCase();
-        if (transcript.includes('hey finexa') || transcript.includes('hey phoenix')) {
+        console.log("Finexa Trigger Debug:", transcript);
+        if (transcript.includes('hey finexa') || transcript.includes('hey phoenix') || transcript.includes('finexa')) {
+          console.log("Finexa: Wake word detected!");
+          playBeep();
           setIsOpen(true);
           stopTrigger();
           startListening();
@@ -64,16 +68,56 @@ const Chatbot = () => {
       }
     };
     
-    tr.onerror = () => stopTrigger();
-    tr.start();
-    triggerRecRef.current = tr;
+    tr.onerror = (err) => {
+      console.error("Finexa Trigger Error:", err.error);
+      stopTrigger();
+      // Restart after a short delay if it's not a permanent error
+      if (err.error !== 'not-allowed') {
+        setTimeout(startTrigger, 1000);
+      }
+    };
+
+    tr.onend = () => {
+      console.log("Finexa Trigger: Recognition ended.");
+      triggerRecRef.current = null;
+      if (!isListening) {
+        setTimeout(startTrigger, 500);
+      }
+    };
+
+    try {
+      tr.start();
+      triggerRecRef.current = tr;
+    } catch (e) {
+      console.error("Finexa Trigger Start Error:", e);
+    }
   };
 
   const stopTrigger = () => {
     if (triggerRecRef.current) {
-      triggerRecRef.current.stop();
+      try {
+        triggerRecRef.current.stop();
+      } catch (e) {}
       triggerRecRef.current = null;
     }
+  };
+
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch (e) {}
   };
 
   // --- Voice Trigger Setup ---
@@ -169,6 +213,9 @@ const Chatbot = () => {
           className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 transition-all group relative"
         >
           <MessageSquare size={30} />
+          {triggerRecRef.current && (
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse shadow-sm" title="Voice Trigger Active"></div>
+          )}
           <div className="absolute right-full mr-4 bg-white text-gray-800 px-4 py-2 rounded-xl text-sm font-bold shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             Ask Finexa AI
           </div>
