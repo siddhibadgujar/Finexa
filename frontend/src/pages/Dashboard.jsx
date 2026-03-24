@@ -18,7 +18,8 @@ const Dashboard = () => {
       totalItemsSold: 0, totalOrdersCompleted: 0, totalPendingOrders: 0, latestInventory: 0
     },
     charts: { pieChartData: [], lineChartData: [] },
-    insights: []
+    insights: [],
+    opInsights: []
   });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ const Dashboard = () => {
   const [showOpFields, setShowOpFields] = useState(false);
   const [txForm, setTxForm] = useState({ 
     type: 'income', amount: '', category: '',
-    unitsProduced: '', itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', returns: '', defects: ''
+    itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', defects: ''
   });
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -41,14 +42,16 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      const [txRes, insightsRes, catRes] = await Promise.all([
+      const [txRes, insightsRes, catRes, opInsightsRes] = await Promise.all([
         axios.get('http://localhost:5555/api/transactions', config),
         axios.get('http://localhost:5555/api/insights', config),
-        axios.get('http://localhost:5555/api/categories', config)
+        axios.get('http://localhost:5555/api/categories', config),
+        axios.get('http://localhost:5555/api/operations/analysis', config)
       ]);
       setData({
         ...txRes.data,
-        insights: insightsRes.data
+        insights: insightsRes.data,
+        opInsights: opInsightsRes.data
       });
       setCategories(catRes.data);
       
@@ -74,7 +77,7 @@ const Dashboard = () => {
   const openIncomeModal = () => {
     setTxForm({ 
       type: 'income', amount: '', category: categories.find(c => c.type === 'income')?.name || '',
-      unitsProduced: '', itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', returns: '', defects: ''
+      itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', defects: ''
     });
     setShowAddCategory(false);
     setShowOpFields(false);
@@ -84,7 +87,7 @@ const Dashboard = () => {
   const openExpenseModal = () => {
     setTxForm({ 
       type: 'expense', amount: '', category: categories.find(c => c.type === 'expense')?.name || '',
-      unitsProduced: '', itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', returns: '', defects: ''
+      itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', defects: ''
     });
     setShowAddCategory(false);
     setShowOpFields(false);
@@ -94,7 +97,7 @@ const Dashboard = () => {
   const openOperationalModal = () => {
     setTxForm({ 
       type: 'income', amount: 0, category: 'Operational Update',
-      unitsProduced: '', itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', returns: '', defects: ''
+      itemsSold: '', ordersReceived: '', ordersCompleted: '', pendingOrders: '', inventoryLevel: '', deliveryTimeAvg: '', defects: ''
     });
     setShowOpModal(true);
   };
@@ -107,24 +110,36 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      await axios.post('http://localhost:5555/api/transactions/add', {
-        ...txForm,
-        amount: Number(txForm.amount) || 0,
-        unitsProduced: Number(txForm.unitsProduced) || 0,
-        itemsSold: Number(txForm.itemsSold) || 0,
-        ordersReceived: Number(txForm.ordersReceived) || 0,
-        ordersCompleted: Number(txForm.ordersCompleted) || 0,
-        pendingOrders: Number(txForm.pendingOrders) || 0,
-        inventoryLevel: Number(txForm.inventoryLevel) || 0,
-        deliveryTimeAvg: Number(txForm.deliveryTimeAvg) || 0,
-        returns: Number(txForm.returns) || 0,
-        defects: Number(txForm.defects) || 0
-      }, config);
-      setShowModal(false);
-      setShowOpModal(false);
+      if (showOpModal) {
+        const received = Number(txForm.ordersReceived) || 0;
+        const completed = Number(txForm.ordersCompleted) || 0;
+        
+        if (completed > received) {
+           alert("Completed Work cannot exceed Total Orders / Bookings.");
+           return;
+        }
+
+        await axios.post('http://localhost:5555/api/operations', {
+          itemsSold: Number(txForm.itemsSold) || 0,
+          ordersReceived: received,
+          ordersCompleted: completed,
+          pendingOrders: Number(txForm.pendingOrders) || 0,
+          inventoryLevel: Number(txForm.inventoryLevel) || 0,
+          deliveryTimeAvg: Number(txForm.deliveryTimeAvg) || 0,
+          defects: Number(txForm.defects) || 0
+        }, config);
+        setShowOpModal(false);
+      } else {
+        await axios.post('http://localhost:5555/api/transactions/add', {
+          ...txForm,
+          amount: Number(txForm.amount) || 0
+        }, config);
+        setShowModal(false);
+      }
+      
       fetchData();
     } catch (error) {
-       console.error('Error adding transaction:', error);
+       console.error('Error adding data:', error);
     }
   };
   const handleAddCategory = async () => {
@@ -191,7 +206,7 @@ const Dashboard = () => {
               <Plus size={14}/> Update Performance
             </button>
           </div>
-          <OperationalMetrics metrics={metrics} />
+          <OperationalMetrics metrics={data.opInsights?.metrics || {}} />
         </div>
 
         {/* Lower Grid (Insights, Health, TX List) */}
@@ -200,7 +215,7 @@ const Dashboard = () => {
             <HealthScore score={metrics.healthScore} />
           </div>
           <div className="lg:col-span-1">
-            <InsightsPanel insights={insights} />
+            <InsightsPanel insights={insights} operationalInsights={data.opInsights?.insights} />
           </div>
           <div className="lg:col-span-1 h-[400px]">
             <TransactionList transactions={transactions} />
@@ -313,36 +328,32 @@ const Dashboard = () => {
             <form onSubmit={submitTx} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Produced</label>
-                  <input type="number" placeholder="0" value={txForm.unitsProduced} onChange={(e) => setTxForm({...txForm, unitsProduced: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Total Orders / Bookings</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.ordersReceived} onChange={(e) => setTxForm({...txForm, ordersReceived: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Items Sold</label>
-                  <input type="number" placeholder="0" value={txForm.itemsSold} onChange={(e) => setTxForm({...txForm, itemsSold: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Completed Work</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.ordersCompleted} onChange={(e) => setTxForm({...txForm, ordersCompleted: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Orders Recv</label>
-                  <input type="number" placeholder="0" value={txForm.ordersReceived} onChange={(e) => setTxForm({...txForm, ordersReceived: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Pending Work</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.pendingOrders} onChange={(e) => setTxForm({...txForm, pendingOrders: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Completed</label>
-                  <input type="number" placeholder="0" value={txForm.ordersCompleted} onChange={(e) => setTxForm({...txForm, ordersCompleted: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Volume / Items Sold</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.itemsSold} onChange={(e) => setTxForm({...txForm, itemsSold: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Pending</label>
-                  <input type="number" placeholder="0" value={txForm.pendingOrders} onChange={(e) => setTxForm({...txForm, pendingOrders: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Avg Delivery Time (Days)</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.deliveryTimeAvg} onChange={(e) => setTxForm({...txForm, deliveryTimeAvg: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Inventory</label>
-                  <input type="number" placeholder="0" value={txForm.inventoryLevel} onChange={(e) => setTxForm({...txForm, inventoryLevel: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Errors / Complaints</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.defects} onChange={(e) => setTxForm({...txForm, defects: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
-                <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Deliv. Time (h)</label>
-                  <input type="number" placeholder="0" value={txForm.deliveryTimeAvg} onChange={(e) => setTxForm({...txForm, deliveryTimeAvg: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Defects</label>
-                  <input type="number" placeholder="0" value={txForm.defects} onChange={(e) => setTxForm({...txForm, defects: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Inventory / Stock Level (Optional)</label>
+                  <input type="number" min="0" placeholder="0" value={txForm.inventoryLevel} onChange={(e) => setTxForm({...txForm, inventoryLevel: e.target.value})} className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-finexa-primary" />
                 </div>
               </div>
 

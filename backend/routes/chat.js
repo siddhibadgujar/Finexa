@@ -1,8 +1,15 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
 const Operation = require('../models/Operation');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ GEMINI_API_KEY missing in .env");
+}
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
  * Generates a rule-based response based on context data and user question
@@ -35,11 +42,6 @@ function getRuleBasedResponse(question, data) {
       `Current inventory level is ${data.inventoryLevel} units. ${data.inventoryLevel < 50 ? 'I recommend restocking soon to avoid stockouts.' : 'Your stock levels look healthy for now.'}`,
       `Stock Status: ${data.inventoryLevel} items in hand. Based on your "${data.topCategory}" spending, ensure your supply chain remains efficient.`,
       `Inventory Check: ${data.inventoryLevel} units available. Keep monitoring this to match your order volume of ${data.ordersReceived}.`
-    ],
-    default: [
-      "I analyzed your business data. You can improve performance by controlling expenses and improving efficiency.",
-      "Finexa AI here. Looking at your data, focusing on reducing costs in your top categories could significantly increase your margins.",
-      "I recommend reviewing your recent transactions to identify potential savings and improve your overall business health."
     ]
   };
 
@@ -51,22 +53,23 @@ function getRuleBasedResponse(question, data) {
   if (q.includes('order')) return getRandom(responses.orders);
   if (q.includes('inventory') || q.includes('stock')) return getRandom(responses.inventory);
   
-  return getRandom(responses.default);
+  return null; // Return null if no rule-based response matches
 }
 
 // @route   POST /api/chat
-// @desc    Chat with rule-based business assistant
+// @desc    Hybrid Chat Assistant (Rule-based + AI)
 router.post('/', auth, async (req, res) => {
-  const { question } = req.body;
+  const { question, message } = req.body;
+  const input = question || message;
   
-  if (!question) {
-    return res.status(400).json({ message: 'Please provide a question' });
+  if (!input) {
+    return res.status(400).json({ message: 'Please provide a message or question' });
   }
 
   try {
     const userId = req.user.id;
 
-    // 1. Fetch Transactions
+    // 1. Fetch User Data for Context
     const transactions = await Transaction.find({ userId }).sort({ date: -1 });
     
     let totalIncome = 0;
@@ -85,7 +88,6 @@ router.post('/', auth, async (req, res) => {
     const topCategory = Object.entries(categoryTotals).sort((a,b) => b[1] - a[1])[0]?.[0] || "General";
     const profit = totalIncome - totalExpense;
 
-    // 2. Fetch Latest Operational Metrics
     const latestOp = await Operation.findOne({ userId }).sort({ date: -1 });
     const opMetrics = latestOp ? latestOp.metrics : { 
       pendingOrders: 0, ordersCompleted: 0, ordersReceived: 0, inventoryLevel: 0 
@@ -93,7 +95,6 @@ router.post('/', auth, async (req, res) => {
 
     const completionRate = Math.round((opMetrics.ordersCompleted / (opMetrics.ordersReceived || 1)) * 100);
 
-    // 3. Generate Rule-Based Response
     const contextData = {
       totalIncome,
       totalExpense,
@@ -106,21 +107,54 @@ router.post('/', auth, async (req, res) => {
       completionRate
     };
 
-    const reply = getRuleBasedResponse(question, contextData);
+    // 2. Try Rule-Based First (For fast, accurate data-related queries)
+    const ruleReply = getRuleBasedResponse(input, contextData);
+
+    if (ruleReply) {
+      return res.json({ 
+        reply: ruleReply, 
+        source: "rule-based" 
+      });
+    }
+
+    // 3. Fallback to Gemini AI (For general context and semantic understanding)
+    console.log("🤖 Falling back to Gemini AI for:", input);
+    
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+    });
+
+    // Provide some context to Gemini to make it aware of the user's business state
+    const prompt = `
+      The user is asking: "${input}"
+      
+      User's Current Business Data for Context:
+      - Total Income: ₹${totalIncome}
+      - Total Expense: ₹${totalExpense}
+      - Net Profit: ₹${profit}
+      - Main Expense Category: ${topCategory}
+      - Pending Orders: ${opMetrics.pendingOrders}
+      - Order Completion Rate: ${completionRate}%
+      
+      Provide a helpful, professional business advice response as Finexa AI. Keep it concise.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
     res.json({ 
-      reply, 
-      source: "rule-based" 
+      reply: text,
+      source: "gemini-ai"
     });
 
   } catch (error) {
-    console.error('Rule-based Chat Error:', error);
+    console.error('Hybrid Chat Error:', error);
     res.status(500).json({ 
-      reply: "I'm having trouble analyzing your data right now. Please try again later.",
-      source: "error"
+      reply: "I'm having trouble connecting to my brain right now. Please try again later.",
+      source: "error",
+      details: error.message
     });
   }
 });
 
 module.exports = router;
-

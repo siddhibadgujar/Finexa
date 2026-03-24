@@ -1,9 +1,9 @@
 import React from 'react';
 import { AlertCircle, CheckCircle2, Info, Lightbulb, Zap, TrendingUp } from 'lucide-react';
 
-const InsightsPanel = ({ insights }) => {
+const InsightsPanel = ({ insights, operationalInsights }) => {
   const financialInsights = (insights || []).filter(i => i.category === 'financial' || !i.category);
-  const operationalInsights = (insights || []).filter(i => i.category === 'operational');
+  const opInsightsArray = operationalInsights || [];
 
   const InsightCard = ({ insight }) => {
     let IconCmp = Info;
@@ -67,10 +67,10 @@ const InsightsPanel = ({ insights }) => {
           <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Operational Insights</h3>
         </div>
         <div className="space-y-3">
-          {operationalInsights.length > 0 ? (
-            operationalInsights.map((i, idx) => <InsightCard key={idx} insight={i} />)
+          {opInsightsArray.length > 0 ? (
+            opInsightsArray.map((i, idx) => <InsightCard key={idx} insight={i} />)
           ) : (
-            <p className="text-[10px] text-gray-400 italic">No operational alerts yet.</p>
+            <p className="text-[10px] text-gray-400 italic">No operational data available</p>
           )}
         </div>
       </div>

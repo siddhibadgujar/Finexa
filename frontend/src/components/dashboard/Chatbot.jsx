@@ -182,7 +182,7 @@ const Chatbot = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5555/api/chat', { question: messageText }, {
+      const res = await axios.post('http://localhost:5555/api/chat', { message: messageText }, {
         headers: { 'x-auth-token': token }
       });
 
