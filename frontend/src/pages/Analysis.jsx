@@ -11,6 +11,8 @@ const Analysis = () => {
     const [groupBy, setGroupBy] = useState('day');
     const [isAutoAdjusted, setIsAutoAdjusted] = useState(false);
     const [data, setData] = useState({});
+    const [patterns, setPatterns] = useState([]);
+    const [trendInsights, setTrendInsights] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -43,10 +45,12 @@ const Analysis = () => {
         if (!isRefresh) setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5555/api/analysis?range=${range}&groupBy=${groupBy}`, {
-                headers: { 'x-auth-token': token }
-            });
+            const [res, patternsRes] = await Promise.all([
+               axios.get(`http://localhost:5555/api/analysis?range=${range}&groupBy=${groupBy}`, { headers: { 'x-auth-token': token } }),
+               axios.get(`http://localhost:5555/api/analysis/operations`, { headers: { 'x-auth-token': token } })
+            ]);
             setData(res.data);
+            setPatterns(patternsRes.data);
             setLoading(false);
             setError(null);
             console.log("Analysis Data Received:", res.data);
@@ -70,6 +74,19 @@ const Analysis = () => {
         return () => clearInterval(interval);
     }, [fetchAnalysis]);
 
+    useEffect(() => {
+        fetch(`http://localhost:5555/api/analysis/trends?range=${range}&groupBy=${groupBy}`, {
+            headers: { 'x-auth-token': localStorage.getItem('token') }
+        })
+        .then(res => res.json())
+        .then(data => {
+            setTrendInsights(data.insights || []);
+        })
+        .catch(() => {
+            setTrendInsights([]);
+        });
+    }, [range, groupBy]);
+
     if (error) return (
         <div className="flex items-center justify-center min-h-[80vh]">
             <div className="text-center p-8 bg-red-50 rounded-3xl border border-red-100 max-w-md">
@@ -89,13 +106,17 @@ const Analysis = () => {
     const { comparison = {}, trends = {}, operations = {}, categories = {}, cashflow = {}, predictions = [], executiveAdvisory } = data;
     const { trendData = [], summary = {}, insights = [] } = trends;
 
-    // Priority Badge Color Helper
     const getPriorityColor = (priority) => {
         switch (priority) {
             case 'HIGH': return 'bg-red-500 text-white border-red-400';
             case 'MEDIUM': return 'bg-yellow-500 text-white border-yellow-400';
             default: return 'bg-green-500 text-white border-green-400';
         }
+    };
+
+    const downloadReport = () => {
+        const token = localStorage.getItem('token');
+        window.open(`http://localhost:5555/api/report/download?token=${token}`, "_blank");
     };
 
     return (
@@ -153,11 +174,17 @@ const Analysis = () => {
                             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
                               <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">📈 Trend Insights</h3>
                               <div className="space-y-3">
-                                {insights.map((i, idx) => (
-                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : i.type === 'warning' ? 'bg-yellow-50 border-yellow-100 text-yellow-800' : i.type === 'critical' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>
-                                    {i.message}
-                                  </div>
-                                ))}
+                                {trendInsights.length > 0 ? (
+                                  trendInsights.map((item, index) => (
+                                    <div key={index} className="p-3.5 rounded-xl border bg-gray-50 border-gray-100 text-gray-700 text-sm font-medium">
+                                      {item.message}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-gray-500 text-sm font-medium italic">
+                                    Not enough data to generate trends
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
@@ -175,13 +202,17 @@ const Analysis = () => {
                           {/* Middle row insights */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">⚙️ Operational Performance</h3>
+                              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">⚙️ Operational Patterns</h3>
                               <div className="space-y-3">
-                                {(operations.insights || []).map((i, idx) => (
-                                  <div key={idx} className={`p-3.5 rounded-xl border text-sm font-medium ${i.type === 'positive' ? 'bg-green-50 border-green-100 text-green-800' : 'bg-yellow-50 border-yellow-100 text-yellow-800'}`}>
-                                    {i.message}
-                                  </div>
-                                ))}
+                                {patterns && patterns.length > 0 && patterns[0].message !== "No operational patterns available" ? (
+                                  patterns.map((item, i) => (
+                                    <div key={i} className="pattern-card p-3.5 rounded-xl border bg-yellow-50 border-yellow-100 text-yellow-800 text-sm font-medium">
+                                      {item.message}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-[12px] text-gray-500 italic">No operational patterns available</div>
+                                )}
                               </div>
                             </div>
                             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
@@ -265,7 +296,7 @@ const Analysis = () => {
                                 </div>
                             </div>
                             
-                            <button className="w-full mt-8 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-[10px]">
+                            <button onClick={downloadReport} className="w-full mt-8 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-[10px]">
                                 Download Strategic Report
                             </button>
                         </div>

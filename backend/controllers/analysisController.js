@@ -331,3 +331,147 @@ exports.getAnalysis = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.getDashboardTrends = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+    let { range = '30d', groupBy = 'day' } = req.query;
+
+    // Calculate Time Windows (similar to getAnalysis)
+    const now = new Date();
+    let rangeMs = 30 * 24 * 60 * 60 * 1000; // default 30d
+    if (range === '1h') rangeMs = 60 * 60 * 1000;
+    if (range === '24h') rangeMs = 24 * 60 * 60 * 1000;
+    if (range === '7d') rangeMs = 7 * 24 * 60 * 60 * 1000;
+
+    const currentStart = new Date(now.getTime() - (rangeMs / 2));
+    const previousStart = new Date(now.getTime() - rangeMs);
+
+    const getAgg = async (start, end) => {
+      const txs = await Transaction.aggregate([
+        { $match: { userId, date: { $gte: start, $lt: end } } },
+        { $group: {
+            _id: null,
+            income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+            expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
+        }}
+      ]);
+      const ops = await Operation.aggregate([
+        { $match: { userId, date: { $gte: start, $lt: end } } },
+        { $group: { _id: null, orders: { $sum: "$metrics.ordersReceived" } } }
+      ]);
+      return {
+        income: txs[0]?.income || 0,
+        expense: txs[0]?.expense || 0,
+        profit: (txs[0]?.income || 0) - (txs[0]?.expense || 0),
+        orders: ops[0]?.orders || 0
+      };
+    };
+
+    const current = await getAgg(currentStart, now);
+    const previous = await getAgg(previousStart, currentStart);
+
+    const calcTrend = (curr, prev) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return ((curr - prev) / prev) * 100;
+    };
+
+    const incomeTrend = Math.round(calcTrend(current.income, previous.income));
+    const expenseTrend = Math.round(calcTrend(current.expense, previous.expense));
+    const profitTrend = Math.round(calcTrend(current.profit, previous.profit));
+    const ordersTrend = Math.round(calcTrend(current.orders, previous.orders));
+
+    let insights = [];
+
+    // Trend insight generation
+    if (incomeTrend > 5) insights.push({ message: `📈 Income increased by ${incomeTrend}%` });
+    else if (incomeTrend < -5) insights.push({ message: `⚠️ Income decreased by ${Math.abs(incomeTrend)}%` });
+
+    if (expenseTrend > 5) insights.push({ message: `⚠️ Expenses increased by ${expenseTrend}%` });
+    else if (expenseTrend < -5) insights.push({ message: `✅ Expenses reduced by ${Math.abs(expenseTrend)}%` });
+
+    if (profitTrend > 5) insights.push({ message: `💰 Profit improved by ${profitTrend}%` });
+    else if (profitTrend < -5) insights.push({ message: `📉 Profit declined by ${Math.abs(profitTrend)}%` });
+
+    if (ordersTrend > 5) insights.push({ message: `📦 Orders increasing (${ordersTrend}%)` });
+    else if (ordersTrend < -5) insights.push({ message: `⚠️ Orders decreasing (${Math.abs(ordersTrend)}%)` });
+
+    if (insights.length === 0) {
+      if (previous.income === 0 && previous.expense === 0) {
+        insights.push({ message: "Not enough data to calculate trends" });
+      } else {
+        insights.push({ message: "No significant trends detected for this period" });
+      }
+    }
+
+    res.json({ insights: insights.slice(0, 4) });
+
+  } catch (err) {
+    console.error("Trend API error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.getOperationalPatterns = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+    const now = new Date();
+    const currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // last 7 days
+    const previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days prior
+
+    const getAgg = async (start, end) => {
+      const ops = await Operation.aggregate([
+        { $match: { userId, date: { $gte: start, $lt: end } } },
+        { $group: { 
+            _id: null, 
+            orders: { $sum: "$metrics.ordersReceived" },
+            completed: { $sum: "$metrics.ordersCompleted" },
+            deliveryTime: { $avg: "$metrics.deliveryTimeAvg" },
+            defects: { $sum: "$metrics.defects" }
+        }}
+      ]);
+      return {
+        orders: ops[0]?.orders || 0,
+        completed: ops[0]?.completed || 0,
+        deliveryTime: ops[0]?.deliveryTime || 0,
+        defects: ops[0]?.defects || 0
+      };
+    };
+
+    const current = await getAgg(currentStart, now);
+    const previous = await getAgg(previousStart, currentStart);
+
+    const calcTrend = (curr, prev) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return ((curr - prev) / prev) * 100;
+    };
+
+    const ordersTrend = calcTrend(current.orders, previous.orders);
+    
+    // completion rate = completed / orders
+    const currentCompRate = current.orders > 0 ? current.completed / current.orders : 0;
+    const previousCompRate = previous.orders > 0 ? previous.completed / previous.orders : 0;
+    const completionTrend = calcTrend(currentCompRate, previousCompRate);
+    
+    const deliveryTimeTrend = calcTrend(current.deliveryTime, previous.deliveryTime);
+    const defectsTrend = calcTrend(current.defects, previous.defects);
+
+    let patterns = [];
+
+    if (ordersTrend > 5) patterns.push({ message: "📈 Workload increasing" });
+    if (ordersTrend < -5) patterns.push({ message: "⚠️ Demand decreasing" });
+    if (deliveryTimeTrend > 5) patterns.push({ message: "🚚 Delivery getting slower" });
+    if (defectsTrend > 5) patterns.push({ message: "⚠️ Quality issues increasing" });
+    if (completionTrend < -5) patterns.push({ message: "⚠️ Efficiency decreasing" });
+
+    if (patterns.length === 0) {
+      patterns.push({ message: "No operational patterns available" });
+    }
+
+    res.json(patterns);
+
+  } catch (err) {
+    console.error("Operational Patterns API error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};

@@ -18,7 +18,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/operations', require('./routes/operations'));
 app.use('/api/analysis', require('./routes/analysis'));
 app.use('/api/chat', require('./routes/chat'));
-
+app.use('/api/report', require('./routes/report'));
 
 // Sample Route
 app.get('/api/test', (req, res) => {
