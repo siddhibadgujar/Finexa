@@ -10,7 +10,6 @@ import InsightsPanel from '../components/dashboard/InsightsPanel';
 import HealthScore from '../components/dashboard/HealthScore';
 import TransactionList from '../components/dashboard/TransactionList';
 import OperationalMetrics from '../components/dashboard/OperationalMetrics';
-import Chatbot from '../components/dashboard/Chatbot';
 
 const Dashboard = () => {
   const [data, setData] = useState({
@@ -485,7 +484,6 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      <Chatbot />
     </div>
   );
 };

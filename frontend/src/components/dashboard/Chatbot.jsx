@@ -12,7 +12,8 @@ const Chatbot = () => {
   const [isListening, setIsListening] = useState(false);
 
   const scrollRef = useRef(null);
-  const recognitionRef = useRef(null); // single recognition instance ref
+  const recognitionRef = useRef(null); 
+  const wakeRecognitionRef = useRef(null); // Dedicated wake-word listener ref
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -88,12 +89,71 @@ const Chatbot = () => {
     }
   };
 
-  // Stop listening if component unmounts
+  // --- Continuous Wake Word Listener ("Finexa" or "Assistant") ---
+  useEffect(() => {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      console.warn("Speech Recognition not supported in this browser.");
+      return;
+    }
+    if (isOpen || isListening) return;
+
+    console.log("Wake-word listener starting...");
+    const wakeRec = new Recognition();
+    wakeRec.continuous = true;
+    wakeRec.interimResults = true;
+    wakeRec.lang = 'en-US';
+
+    wakeRec.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript.toLowerCase();
+        // console.log("Background listening:", transcript); // Diagnostic log
+        if (transcript.includes('finexa') || transcript.includes('assistant')) {
+          console.log("Wake word detected! Opening Chatbot...");
+          setIsOpen(true);
+          speak('Yes, I am listening! How can I help?');
+          wakeRec.stop();
+        }
+      }
+    };
+
+    wakeRec.onerror = (err) => {
+      console.error("Wake-word listener error:", err.error);
+      if (err.error === 'not-allowed') {
+        console.warn("Microphone permission denied for wake-word listener.");
+      }
+    };
+
+    wakeRec.onend = () => {
+      // console.log("Wake-word listener ended.");
+      if (!isOpen && !isListening) {
+        setTimeout(() => {
+          if (!isOpen && !isListening) {
+            try { wakeRec.start(); } catch (_) {}
+          }
+        }, 1000); 
+      }
+    };
+
+    try {
+      wakeRec.start();
+      wakeRecognitionRef.current = wakeRec;
+    } catch (e) {
+      console.error('Wake recognition start error:', e);
+    }
+
+    return () => {
+      if (wakeRecognitionRef.current) {
+        try { wakeRecognitionRef.current.stop(); } catch (_) {}
+      }
+    };
+  }, [isOpen, isListening]);
+
+  // Stop all listeners if component unmounts
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch (_) {}
-      }
+      if (recognitionRef.current) try { recognitionRef.current.stop(); } catch (_) {}
+      if (wakeRecognitionRef.current) try { wakeRecognitionRef.current.stop(); } catch (_) {}
       window.speechSynthesis?.cancel();
     };
   }, []);

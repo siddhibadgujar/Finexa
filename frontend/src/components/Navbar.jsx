@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
-import { User, LogOut, Settings, ChevronDown, X, Building2, Mail, Globe, Shield, CheckCircle2 } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, X, Building2, Mail, Globe, Shield, CheckCircle2, Menu, LayoutDashboard, BarChart3, AlertTriangle } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 // ProfileModal — self-contained: fetches, edits, saves, switches language
@@ -193,6 +193,7 @@ const Navbar = () => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
@@ -218,9 +219,9 @@ const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { key: 'nav.dashboard',    path: '/dashboard' },
-    { key: 'nav.trendAnalysis', path: '/analysis' },
-    { key: 'nav.anomaly',       path: '/anomaly' },
+    { key: 'nav.dashboard',     path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { key: 'nav.trendAnalysis',  path: '/analysis',  icon: <BarChart3 size={20} /> },
+    { key: 'nav.anomaly',       path: '/anomaly',   icon: <AlertTriangle size={20} /> },
   ];
 
   return (
@@ -236,6 +237,14 @@ const Navbar = () => {
               </div>
               <span className="font-black text-xl tracking-tight text-gray-900 leading-none">Finexa</span>
             </a>
+
+            {/* Mobile Menu Button - Left of User Section on small screens */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-gray-500 hover:text-indigo-600 focus:outline-none ml-4"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center gap-8 ml-12">
@@ -306,6 +315,27 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Menu Drawer - INSIDE nav for correct top positioning */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white/95 backdrop-blur-md border-b border-gray-100 absolute top-full left-0 w-full z-[49] animate-in slide-in-from-top duration-300">
+            <div className="px-4 pt-4 pb-8 space-y-2">
+              {navLinks.map((item) => (
+                <a
+                  key={item.key}
+                  href={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-4 px-4 py-4 text-base font-black text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-2xl transition-all group"
+                >
+                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:text-indigo-600 group-active:text-indigo-600 transition-colors">
+                    {item.icon}
+                  </div>
+                  {t(item.key)}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}

@@ -8,6 +8,7 @@ import SetupBusiness from './pages/SetupBusiness';
 import Analysis from './pages/Analysis';
 import Anomaly from './pages/Anomaly';
 import Settings from './pages/Settings';
+import Chatbot from './components/dashboard/Chatbot';
 
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
   const token = localStorage.getItem('token');
@@ -50,6 +51,7 @@ const PrivateLayout = () => {
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
+      <Chatbot />
     </div>
   );
 };
