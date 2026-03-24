@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { IndianRupee, TrendingDown, TrendingUp, Wallet, ArrowDown, ArrowUp, Plus, Minus, ChevronDown, ChevronUp, Zap, AlertCircle } from 'lucide-react';
+import { IndianRupee, TrendingDown, TrendingUp, Wallet, ArrowDown, ArrowUp, Plus, Minus, ChevronDown, ChevronUp, Zap, AlertCircle, BarChart3 } from 'lucide-react';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import QuickActions from '../components/dashboard/QuickActions';
 import ChartSection from '../components/dashboard/ChartSection';
@@ -34,10 +34,54 @@ const Dashboard = () => {
   });
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [performance, setPerformance] = useState({
+    status: "Healthy",
+    revenue: "Stable 📈",
+    expense: "Controlled ✅",
+    risk: "Low",
+    insight: "✅ Business performance is stable."
+  });
 
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const business = JSON.parse(localStorage.getItem('business') || 'null');
   const businessName = business?.businessName || 'My Business';
+
+  const calculatePerformance = (anomalies) => {
+    const flagged = (anomalies || []).filter(a => a.anomaly === 1);
+    const incomeAnomalies = flagged.filter(a => a.type === 'income');
+    const expenseAnomalies = flagged.filter(a => a.type === 'expense');
+
+    let status = "Healthy";
+    let risk = "Low";
+    let insight = "✅ Business performance is stable.";
+
+    if (flagged.length > 3) {
+      status = "Unstable";
+      risk = "High";
+      insight = "⚠️ High anomalies detected. Business performance is unstable.";
+    } else if (flagged.length > 1) {
+      status = "Moderate";
+      risk = "Medium";
+      insight = "⚠️ Some fluctuations detected. Monitor closely.";
+    }
+
+    const revenue = incomeAnomalies.length > 0 ? "Declining 🔻" : "Stable 📈";
+    const expense = expenseAnomalies.length > 0 ? "Volatile ⚠️" : "Controlled ✅";
+
+    return { status, revenue, expense, risk, insight };
+  };
+
+  const fetchPerformance = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+      const res = await axios.get('http://localhost:5555/api/anomaly', config);
+      const anomalies = res.data.anomalies || [];
+      setPerformance(calculatePerformance(anomalies));
+    } catch (err) {
+      console.error("Error fetching performance:", err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -76,6 +120,7 @@ const Dashboard = () => {
     console.log("Dashboard - User:", user);
     console.log("Dashboard - Business:", business);
     fetchData();
+    fetchPerformance();
   }, []);
 
   const openIncomeModal = () => {
@@ -221,6 +266,60 @@ const Dashboard = () => {
 
         {/* Charts */}
         <ChartSection lineData={charts.lineChartData} pieData={charts.pieChartData} />
+
+        {/* Business Performance Section */}
+        <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm mb-10 overflow-hidden relative group">
+            <div className="flex items-center gap-3 mb-8">
+                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                    <BarChart3 size={24} />
+                </div>
+                <h2 className="text-2xl font-black text-gray-800 tracking-tight uppercase italic">📊 Business Performance</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Current Status</p>
+                    <p className={`text-xl font-black flex items-center gap-2 ${
+                        performance.status === 'Unstable' ? 'text-red-600' : 
+                        performance.status === 'Moderate' ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                        {performance.status === 'Unstable' && <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></div>}
+                        {performance.status}
+                    </p>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Revenue Trend</p>
+                    <p className="text-xl font-black text-gray-700 tracking-tight">{performance.revenue}</p>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Expense Control</p>
+                    <p className="text-xl font-black text-gray-700 tracking-tight">{performance.expense}</p>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Risk Level</p>
+                    <p className={`text-xl font-black tracking-tight ${
+                        performance.risk === 'High' ? 'text-red-600' : 
+                        performance.risk === 'Medium' ? 'text-yellow-600' : 'text-green-600'
+                    }`}>{performance.risk}</p>
+                </div>
+            </div>
+
+            <div className={`mt-8 p-5 rounded-3xl border-2 border-dashed transition-colors ${
+                performance.status === 'Unstable' ? 'bg-red-50 border-red-100' : 
+                performance.status === 'Moderate' ? 'bg-yellow-50 border-yellow-100' : 'bg-green-50 border-green-100'
+            }`}>
+                <p className={`font-black text-xs uppercase tracking-widest mb-1 opacity-60 ${
+                    performance.status === 'Unstable' ? 'text-red-700' : 
+                    performance.status === 'Moderate' ? 'text-yellow-700' : 'text-green-700'
+                }`}>AI Decision Summary</p>
+                <p className={`font-bold text-sm leading-relaxed ${
+                    performance.status === 'Unstable' ? 'text-red-800' : 
+                    performance.status === 'Moderate' ? 'text-yellow-800' : 'text-green-800'
+                }`}>
+                    {performance.insight}
+                </p>
+            </div>
+        </div>
 
         {/* Operational Metrics Section */}
         <div className="mt-8">
