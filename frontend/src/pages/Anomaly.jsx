@@ -50,7 +50,7 @@ const Anomaly = () => {
       // Only set UI error if we have no existing data
       setData(prev => {
           if (!prev.anomalies || prev.anomalies.length === 0) {
-              setError(err.response?.data?.message || "ML service unavailable. Please ensure the Python service is running.");
+              setError("⚠️ ML service is currently offline");
           }
           return prev;
       });
