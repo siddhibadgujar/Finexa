@@ -30,6 +30,13 @@ const Navbar = () => {
             <span className="font-bold text-xl tracking-tight text-gray-900">Finexa</span>
           </Link>
 
+          <div className="flex items-center gap-6 ml-8">
+            <Link to="/dashboard" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">Dashboard</Link>
+            <Link to="/analysis" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">Trend Analysis</Link>
+          </div>
+
+          <div className="flex-1"></div>
+
           <div className="flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-4">
