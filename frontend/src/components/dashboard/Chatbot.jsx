@@ -91,20 +91,19 @@ const Chatbot = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5555/api/chat', { question: messageText }, {
+      const res = await axios.post('http://localhost:5555/api/chat', { message: messageText }, {
         headers: { 'x-auth-token': token }
       });
 
       const botMessage = { 
         role: 'assistant', 
-        text: res.data.answer,
-        source: res.data.source
+        text: res.data.reply
       };
       setMessages(prev => [...prev, botMessage]);
-      speak(res.data.answer);
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I am having trouble connecting.' }]);
+      speak(res.data.reply);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Server error, try again' }]);
     } finally {
       setLoading(false);
     }

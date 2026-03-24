@@ -3,21 +3,14 @@ import { Package, ShoppingBag, ClipboardList, CheckSquare, Zap, Clock, AlertCirc
 
 const OperationalMetrics = ({ metrics }) => {
   const { 
-    unitsProduced, totalItemsSold, ordersReceived, totalOrdersCompleted, 
-    totalPendingOrders, latestInventory, deliveryTimeAvg, totalReturns, defects 
+    itemsSold, ordersReceived, ordersCompleted, 
+    pendingOrders, inventoryLevel, deliveryTimeAvg, returns, defects 
   } = metrics || {};
 
   const cards = [
     { 
-      label: 'Units Produced', 
-      value: unitsProduced || 0, 
-      icon: Zap, 
-      color: 'text-indigo-600', 
-      bg: 'bg-indigo-50' 
-    },
-    { 
       label: 'Items Sold', 
-      value: totalItemsSold || 0, 
+      value: itemsSold || 0, 
       icon: ShoppingBag, 
       color: 'text-blue-600', 
       bg: 'bg-blue-50' 
@@ -31,21 +24,21 @@ const OperationalMetrics = ({ metrics }) => {
     },
     { 
       label: 'Orders Comp.', 
-      value: totalOrdersCompleted || 0, 
+      value: ordersCompleted || 0, 
       icon: CheckSquare, 
       color: 'text-green-600', 
       bg: 'bg-green-50' 
     },
     { 
       label: 'Pending Orders', 
-      value: totalPendingOrders || 0, 
+      value: pendingOrders || 0, 
       icon: ClipboardList, 
       color: 'text-yellow-600', 
       bg: 'bg-yellow-50' 
     },
     { 
       label: 'Inventory Level', 
-      value: latestInventory || 0, 
+      value: inventoryLevel || 0, 
       icon: Package, 
       color: 'text-purple-600', 
       bg: 'bg-purple-50' 
@@ -59,7 +52,7 @@ const OperationalMetrics = ({ metrics }) => {
     },
     { 
       label: 'Returns / Defects', 
-      value: (totalReturns || 0) + (defects || 0), 
+      value: (returns || 0) + (defects || 0), 
       icon: AlertCircle, 
       color: 'text-red-600', 
       bg: 'bg-red-50' 
