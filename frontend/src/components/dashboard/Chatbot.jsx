@@ -23,6 +23,7 @@ const Chatbot = () => {
   // --- Speech Recognition ---
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = Recognition ? new Recognition() : null;
+  const triggerRecRef = useRef(null);
 
   if (recognition) {
     recognition.continuous = false;
@@ -31,58 +32,85 @@ const Chatbot = () => {
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setIsListening(false);
-      handleSend(transcript);
+      handleSend(transcript, true); // true indicates voice session
     };
 
-    recognition.onerror = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      startTrigger();
+    };
+    
+    recognition.onend = () => {
+      if (!isListening) startTrigger();
+    };
   }
 
-  // --- Voice Trigger (Hey Finexa) ---
-  useEffect(() => {
-    if (!Recognition) return;
+  const startTrigger = () => {
+    if (!Recognition || isListening) return;
+    if (triggerRecRef.current) return;
+
+    const tr = new Recognition();
+    tr.continuous = true;
+    tr.interimResults = true;
     
-    const triggerRec = new Recognition();
-    triggerRec.continuous = true;
-    triggerRec.interimResults = true;
-    
-    triggerRec.onresult = (event) => {
+    tr.onresult = (event) => {
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript.toLowerCase();
         if (transcript.includes('hey finexa') || transcript.includes('hey phoenix')) {
           setIsOpen(true);
-          // Play a small sound or give visual feedback?
+          stopTrigger();
+          startListening();
         }
       }
     };
     
-    triggerRec.start();
-    return () => triggerRec.stop();
-  }, []);
+    tr.onerror = () => stopTrigger();
+    tr.start();
+    triggerRecRef.current = tr;
+  };
+
+  const stopTrigger = () => {
+    if (triggerRecRef.current) {
+      triggerRecRef.current.stop();
+      triggerRecRef.current = null;
+    }
+  };
+
+  // --- Voice Trigger Setup ---
+  useEffect(() => {
+    startTrigger();
+    return () => stopTrigger();
+  }, [Recognition]);
 
   // --- Text-to-Speech ---
-  const speak = (text) => {
-    if (!voiceEnabled || !window.speechSynthesis) return;
+  const speak = (text, onEndCallback) => {
+    if (!voiceEnabled || !window.speechSynthesis) {
+      if (onEndCallback) onEndCallback();
+      return;
+    }
     
-    // Stop any current speaking
     window.speechSynthesis.cancel();
-    
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Auto-detect language (simple regex check for Devanagari script)
     if (/[\u0900-\u097F]/.test(text)) {
-      // Could be Hindi or Marathi. 
-      // Most browsers support hi-IN. 
       utterance.lang = 'hi-IN'; 
     } else {
       utterance.lang = 'en-US';
+    }
+
+    if (onEndCallback) {
+      utterance.onend = () => onEndCallback();
     }
     
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSend = async (text) => {
+  const handleSend = async (text, isVoiceSession = false) => {
     const messageText = text || input;
-    if (!messageText.trim()) return;
+    if (!messageText.trim()) {
+      if (isVoiceSession) startTrigger();
+      return;
+    }
 
     const userMessage = { role: 'user', text: messageText };
     setMessages(prev => [...prev, userMessage]);
@@ -101,10 +129,18 @@ const Chatbot = () => {
         source: res.data.source
       };
       setMessages(prev => [...prev, botMessage]);
-      speak(res.data.reply);
+      
+      speak(res.data.reply, () => {
+        if (isVoiceSession && voiceEnabled) {
+          startListening();
+        } else {
+          startTrigger();
+        }
+      });
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I am having trouble connecting.' }]);
+      startTrigger();
     } finally {
       setLoading(false);
     }
@@ -112,9 +148,17 @@ const Chatbot = () => {
 
   const startListening = () => {
     if (!recognition) return alert('Speech recognition not supported in this browser.');
+    stopTrigger();
     setIsListening(true);
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Recognition start error:", e);
+      setIsListening(false);
+      startTrigger();
+    }
   };
+
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
