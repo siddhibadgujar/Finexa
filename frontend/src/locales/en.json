@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "trendAnalysis": "Trend Analysis",
     "anomaly": "Anomaly",
+    "importData": "Import Data",
     "profile": "Profile & Settings",
     "logout": "Logout",
     "login": "Log In",

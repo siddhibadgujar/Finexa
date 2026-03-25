@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
-import { User, LogOut, Settings, ChevronDown, X, Building2, Mail, Globe, Shield, CheckCircle2, Menu, LayoutDashboard, BarChart3, AlertTriangle } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, X, Building2, Mail, Globe, Shield, CheckCircle2, Menu, LayoutDashboard, BarChart3, AlertTriangle, FileUp } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 // ─────────────────────────────────────────────────────────────
@@ -220,9 +220,10 @@ const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { key: 'nav.dashboard',     path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { key: 'nav.trendAnalysis',  path: '/analysis',  icon: <BarChart3 size={20} /> },
-    { key: 'nav.anomaly',       path: '/anomaly',   icon: <AlertTriangle size={20} /> },
+    { key: 'nav.dashboard',     path: '/dashboard',    icon: <LayoutDashboard size={20} /> },
+    { key: 'nav.trendAnalysis',  path: '/analysis',     icon: <BarChart3 size={20} /> },
+    { key: 'nav.anomaly',       path: '/anomaly',      icon: <AlertTriangle size={20} /> },
+    { key: 'nav.importData',    path: '/import-data',  icon: <FileUp size={20} /> },
   ];
 
   return (

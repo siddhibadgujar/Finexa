@@ -8,6 +8,7 @@ import SetupBusiness from './pages/SetupBusiness';
 import Analysis from './pages/Analysis';
 import Anomaly from './pages/Anomaly';
 import Settings from './pages/Settings';
+import ImportData from './pages/ImportData';
 import Chatbot from './components/dashboard/Chatbot';
 
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
@@ -132,6 +133,11 @@ function App() {
           <Route path="/settings" element={
             <ProtectedRoute requireBusiness={false}>
               <Settings />
+            </ProtectedRoute>
+          } />
+          <Route path="/import-data" element={
+            <ProtectedRoute>
+              <ImportData />
             </ProtectedRoute>
           } />
           {/* Default Route */}
