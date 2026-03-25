@@ -25,6 +25,13 @@ exports.detectAnomalies = async (req, res) => {
     // 3. Send to Python API (Port 5001)
     try {
       console.log("Sending to ML:", formattedData);
+      
+      const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+      const mlResponse = await axios.post(`${mlServiceUrl}/anomaly`, { transactions: formattedData }, {
+        timeout: 10000 // 10 second timeout
+      });
+      console.log("ML Response Received:", mlResponse.status);
+      let results = mlResponse.data;
 
       // 4. Advanced Analytics: Calculate Severity and Explanations
       const incomeTx = results.filter(t => t.type === 'income');
