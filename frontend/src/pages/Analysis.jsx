@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config/api';
 import { useTranslation } from 'react-i18next';
 import { TrendingUp, BarChart3, Clock, AlertCircle, Zap, Activity, ShieldCheck, Truck } from 'lucide-react';
 import SummaryCard from '../components/analysis/SummaryCard';
@@ -49,8 +50,8 @@ const Analysis = () => {
         try {
             const token = localStorage.getItem('token');
             const [res, patternsRes] = await Promise.all([
-               axios.get(`http://localhost:5555/api/analysis?range=${range}&groupBy=${groupBy}`, { headers: { 'x-auth-token': token } }),
-               axios.get(`http://localhost:5555/api/analysis/operations`, { headers: { 'x-auth-token': token } })
+               axios.get(`${API_URL}/api/analysis?range=${range}&groupBy=${groupBy}`, { headers: { 'x-auth-token': token } }),
+               axios.get(`${API_URL}/api/analysis/operations`, { headers: { 'x-auth-token': token } })
             ]);
             setData(res.data);
             setPatterns(patternsRes.data);
@@ -78,7 +79,7 @@ const Analysis = () => {
     }, [fetchAnalysis]);
 
     useEffect(() => {
-        fetch(`http://localhost:5555/api/analysis/trends?range=${range}&groupBy=${groupBy}`, {
+        fetch(`${API_URL}/api/analysis/trends?range=${range}&groupBy=${groupBy}`, {
             headers: { 'x-auth-token': localStorage.getItem('token') }
         })
         .then(res => res.json())
@@ -122,7 +123,7 @@ const Analysis = () => {
 
     const downloadReport = () => {
         const token = localStorage.getItem('token');
-        window.open(`http://localhost:5555/api/report/download?token=${token}`, "_blank");
+        window.open(`${API_URL}/api/report/download?token=${token}`, "_blank");
     };
 
     return (

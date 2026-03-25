@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../config/api';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 const Login = () => {
@@ -11,7 +12,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5555/api/auth/login', formData);
+      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
       const token = res.data.token;
       const user = res.data.user;
       
@@ -22,7 +23,7 @@ const Login = () => {
       console.log("User logged in:", user);
 
       // Check if business is already setup
-      const businessRes = await axios.get('http://localhost:5555/api/business/me', {
+      const businessRes = await axios.get(`${API_URL}/api/business/me`, {
         headers: { 'x-auth-token': token }
       });
 

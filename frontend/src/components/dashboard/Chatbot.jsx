@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Mic, Volume2, VolumeX, Sparkles, Zap } from 'lucide-react';
+import { API_URL } from '../../config/api';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -169,7 +170,7 @@ const Chatbot = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5555/api/chat', {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

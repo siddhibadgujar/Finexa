@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Globe, Shield, Building2, Mail, CheckCircle2 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Settings = () => {
     const [formData, setFormData] = useState({
@@ -59,7 +60,7 @@ const Settings = () => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('token');
             try {
-                const res = await fetch("http://localhost:5555/api/user/profile", {
+                const res = await fetch(`${API_URL}/api/user/profile`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -97,7 +98,7 @@ const Settings = () => {
         const token = localStorage.getItem('token');
 
         try {
-            const res = await fetch("http://localhost:5555/api/user/update", {
+            const res = await fetch(`${API_URL}/api/user/update`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

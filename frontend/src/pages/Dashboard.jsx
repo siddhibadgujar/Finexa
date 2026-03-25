@@ -10,6 +10,7 @@ import InsightsPanel from '../components/dashboard/InsightsPanel';
 import HealthScore from '../components/dashboard/HealthScore';
 import TransactionList from '../components/dashboard/TransactionList';
 import OperationalMetrics from '../components/dashboard/OperationalMetrics';
+import { API_URL } from '../config/api';
 
 const Dashboard = () => {
   const [data, setData] = useState({
@@ -76,7 +77,7 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      const res = await axios.get('http://localhost:5555/api/anomaly', config);
+      const res = await axios.get(`${API_URL}/api/anomaly`, config);
       const anomalies = res.data.anomalies || [];
       setPerformance(calculatePerformance(anomalies));
     } catch (err) {
@@ -90,11 +91,11 @@ const Dashboard = () => {
       const config = { headers: { 'x-auth-token': token } };
 
       const [txRes, insightsRes, catRes, opInsightsRes, anomalyRes] = await Promise.all([
-        axios.get('http://localhost:5555/api/transactions', config),
-        axios.get('http://localhost:5555/api/insights', config),
-        axios.get('http://localhost:5555/api/categories', config),
-        axios.get('http://localhost:5555/api/operations/analysis', config),
-        axios.get('http://localhost:5555/api/anomaly', config)
+        axios.get(`${API_URL}/api/transactions`, config),
+        axios.get(`${API_URL}/api/insights`, config),
+        axios.get(`${API_URL}/api/categories`, config),
+        axios.get(`${API_URL}/api/operations/analysis`, config),
+        axios.get(`${API_URL}/api/anomaly`, config)
       ]);
       setData({
         ...txRes.data,
@@ -106,8 +107,8 @@ const Dashboard = () => {
       
       // Auto-seed if empty
       if (catRes.data.length === 0) {
-        await axios.post('http://localhost:5555/api/categories/seed', {}, config);
-        const retryCat = await axios.get('http://localhost:5555/api/categories', config);
+        await axios.post(`${API_URL}/api/categories/seed`, {}, config);
+        const retryCat = await axios.get(`${API_URL}/api/categories`, config);
         setCategories(retryCat.data);
       }
     } catch (error) {
@@ -169,7 +170,7 @@ const Dashboard = () => {
            return;
         }
 
-        await axios.post('http://localhost:5555/api/operations', {
+        await axios.post(`${API_URL}/api/operations`, {
           itemsSold: Number(txForm.itemsSold) || 0,
           ordersReceived: received,
           ordersCompleted: completed,
@@ -180,7 +181,7 @@ const Dashboard = () => {
         }, config);
         setShowOpModal(false);
       } else {
-        await axios.post('http://localhost:5555/api/transactions/add', {
+        await axios.post(`${API_URL}/api/transactions/add`, {
           ...txForm,
           amount: Number(txForm.amount) || 0
         }, config);
@@ -198,7 +199,7 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      await axios.post('http://localhost:5555/api/categories/add', {
+      await axios.post(`${API_URL}/api/categories/add`, {
         name: newCategoryName.trim().toLowerCase(),
         type: txForm.type
       }, config);

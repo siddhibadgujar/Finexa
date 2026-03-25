@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config/api';
 import { Building2, IndianRupee, Activity, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 const SetupBusiness = () => {
@@ -63,7 +64,7 @@ const SetupBusiness = () => {
 
       console.log("Sending setup data:", payload);
 
-      const res = await axios.post('http://localhost:5555/api/business/setup', payload, {
+      const res = await axios.post(`${API_URL}/api/business/setup`, payload, {
         headers: { 'x-auth-token': token }
       });
 

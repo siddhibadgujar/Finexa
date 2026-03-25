@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config/api';
 import { useTranslation } from 'react-i18next';
 import { 
   RefreshCcw, AlertTriangle, CheckCircle, Loader2, TrendingUp, TrendingDown, 
@@ -40,7 +41,7 @@ const Anomaly = () => {
     
     setError(null);
     try {
-      const response = await axios.get('http://localhost:5555/api/anomaly', {
+      const response = await axios.get(`${API_URL}/api/anomaly`, {
         timeout: 10000 
       });
       

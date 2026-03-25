@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../config/api';
 import { User, Mail, Lock, ArrowRight } from 'lucide-react';
 
 const Signup = () => {
@@ -11,7 +12,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5555/api/auth/signup', formData);
+      const res = await axios.post(`${API_URL}/api/auth/signup`, formData);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       localStorage.setItem('lastActive', Date.now());

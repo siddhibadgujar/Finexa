@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import { User, LogOut, Settings, ChevronDown, X, Building2, Mail, Globe, Shield, CheckCircle2, Menu, LayoutDashboard, BarChart3, AlertTriangle } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 // ─────────────────────────────────────────────────────────────
 // ProfileModal — self-contained: fetches, edits, saves, switches language
@@ -21,7 +22,7 @@ const ProfileModal = ({ onClose }) => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await fetch('http://localhost:5555/api/user/profile', {
+        const res = await fetch(`${API_URL}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -50,7 +51,7 @@ const ProfileModal = ({ onClose }) => {
     setIsSaving(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5555/api/user/update', {
+      const res = await fetch(`${API_URL}/api/user/update`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

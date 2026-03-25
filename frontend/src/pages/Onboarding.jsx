@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Building2, IndianRupee, PieChart, CheckCircle2, UserPlus, Package, ClipboardList, ArrowRight, ArrowLeft } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Onboarding = ({ onLogin, onComplete }) => {
   const [step, setStep] = useState(1);
@@ -36,7 +37,7 @@ const Onboarding = ({ onLogin, onComplete }) => {
   const handleFinalSubmit = async () => {
     try {
       // 1. REAL SIGNUP: Save user to Backend MongoDB
-      const res = await axios.post('http://localhost:5555/api/auth/signup', {
+      const res = await axios.post(`${API_URL}/api/auth/signup`, {
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -51,7 +52,7 @@ const Onboarding = ({ onLogin, onComplete }) => {
       localStorage.setItem('primaryExpense', formData.primaryExpense);
       
       // 3. Seed initial financial & operational data via API
-      await axios.post('http://localhost:5555/api/transactions/add', {
+      await axios.post(`${API_URL}/api/transactions/add`, {
         type: 'income',
         amount: Number(formData.startingBalance) || 0,
         category: 'Initial Balance',
