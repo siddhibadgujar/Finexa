@@ -1,10 +1,12 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 const anomalyController = require('../controllers/anomalyController');
 const auth = require('../middleware/auth');
 
-// Endpoint: GET /api/anomaly
-// Logic: Fetch user-specific transactions, send to ML service, return results
-router.get('/', auth, anomalyController.detectAnomalies);
+// GET  /api/anomaly          — detect anomalies for logged-in user
+router.get('/',             auth, anomalyController.detectAnomalies);
+
+// PUT  /api/anomaly/resolve/:id — mark a specific anomaly as resolved
+router.put('/resolve/:id',  auth, anomalyController.resolveAnomaly);
 
 module.exports = router;
