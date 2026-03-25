@@ -26,9 +26,6 @@ exports.detectAnomalies = async (req, res) => {
     try {
       console.log("Sending to ML:", formattedData);
       
-      const mlResponse = await axios.post('http://localhost:5001/anomaly', { transactions: formattedData }, {
-        timeout: 10000 // 10 second timeout
-      });
       
       console.log("ML Response Received:", mlResponse.status);
       let results = mlResponse.data;
