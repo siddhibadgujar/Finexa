@@ -25,7 +25,6 @@ exports.detectAnomalies = async (req, res) => {
     // 3. Send to Python API (Port 5001)
     try {
       console.log("Sending to ML:", formattedData);
-      let results = mlResponse.data;
 
       // 4. Advanced Analytics: Calculate Severity and Explanations
       const incomeTx = results.filter(t => t.type === 'income');
