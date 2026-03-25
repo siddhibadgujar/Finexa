@@ -3,10 +3,8 @@ const Transaction = require('../models/Transaction');
 
 exports.detectAnomalies = async (req, res) => {
   try {
-    // 1. Fetch transactions from MongoDB
-    // Optimization: Only fetch last N transactions or within a date range if dataset is huge.
-    // For now, fetching all to give Isolation Forest enough data.
-    const transactions = await Transaction.find().sort({ date: 1 });
+    // 1. Fetch transactions from MongoDB — filtered by the authenticated user's ID
+    const transactions = await Transaction.find({ userId: req.user.id }).sort({ date: 1 });
 
     if (transactions.length === 0) {
       return res.status(200).json({

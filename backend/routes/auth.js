@@ -15,7 +15,7 @@ router.post('/signup', async (req, res) => {
     await user.save();
 
     const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET || 'finexa_secret', { expiresIn: '7d' }, (err, token) => {
+    jwt.sign(payload, process.env.JWT_SECRET || 'finexa_secret', { expiresIn: '2d' }, (err, token) => {
       if (err) {
         console.error("JWT Sign Error:", err);
         return res.status(500).json({ message: 'Error generating token' });
@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: 'Invalid Credentials' });
 
     const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET || 'finexa_secret', { expiresIn: '7d' }, (err, token) => {
+    jwt.sign(payload, process.env.JWT_SECRET || 'finexa_secret', { expiresIn: '2d' }, (err, token) => {
       if (err) {
         console.error("JWT Sign Error:", err);
         return res.status(500).json({ message: 'Error generating token' });

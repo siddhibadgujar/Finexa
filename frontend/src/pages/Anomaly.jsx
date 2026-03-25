@@ -41,8 +41,10 @@ const Anomaly = () => {
     
     setError(null);
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${API_URL}/api/anomaly`, {
-        timeout: 10000 
+        headers: { 'x-auth-token': token },
+        timeout: 10000
       });
       
       setData(response.data);
