@@ -24,8 +24,8 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/user', require('./routes/user'));
 
 // Sample Route
-app.get('/api/test', (req, res) => {
-  res.send('Finexa API working');
+app.get('/', (req, res) => {
+  res.send('Finexa Backend is Running 🚀');
 });
 
 const PORT = process.env.PORT || 5000;
