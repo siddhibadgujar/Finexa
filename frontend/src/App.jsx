@@ -59,7 +59,7 @@ const PrivateLayout = () => {
 
 function App() {
   useEffect(() => {
-    // 1. Session Timeout Logic (2 Minutes)
+    // 1. Session Timeout Logic (2 Days)
     const interval = setInterval(() => {
       const token = localStorage.getItem('token');
       const lastActive = localStorage.getItem('lastActive');
@@ -68,7 +68,7 @@ function App() {
         const now = Date.now();
         const diff = now - parseInt(lastActive);
 
-        if (diff > 2 * 60 * 1000) { // 2 minutes
+        if (diff > 2 * 24 * 60 * 60 * 1000) { // 2 days
           console.log("Session timed out due to inactivity");
           localStorage.clear();
           window.location.href = "/login";

@@ -8,31 +8,235 @@ import {
 } from 'lucide-react';
 import AnomalyChart from '../components/anomaly/AnomalyChart';
 
-// ─── Strategy content per anomaly type ───────────────────────────────────────
-const STRATEGIES = {
-  expense: {
-    title: 'Expense Spike Resolution',
-    color: 'red',
-    steps: [
-      { icon: '🔍', action: 'Review the transaction', detail: 'Pull original invoice/receipt and verify the charge is legitimate.' },
-      { icon: '📞', action: 'Contact vendor', detail: 'Reach out to verify pricing. Request credit note if overcharged.' },
-      { icon: '📊', action: 'Compare with history', detail: 'Check if similar expenses were lower in previous months.' },
-      { icon: '💰', action: 'Adjust budget allocation', detail: 'Update your monthly budget ceiling for this category.' },
-      { icon: '✅', action: 'Set spending controls', detail: 'Implement approval workflow for future transactions above this threshold.' },
-    ]
-  },
-  income: {
-    title: 'Revenue Drop Resolution',
-    color: 'blue',
-    steps: [
-      { icon: '📋', action: 'Review pending receivables', detail: 'Check outstanding invoices and follow up with clients.' },
-      { icon: '📞', action: 'Contact key clients', detail: 'Reach out to customers who have not paid on schedule.' },
-      { icon: '📈', action: 'Analyze sales pipeline', detail: 'Identify deals at risk and accelerate conversion efforts.' },
-      { icon: '🎯', action: 'Run promotional campaign', detail: 'Offer a limited-time discount to boost near-term sales volume.' },
-      { icon: '🔄', action: 'Diversify revenue streams', detail: 'Explore additional income channels to reduce dependency on one source.' },
-    ]
-  }
+// ─────────────────────────────────────────────────────────────────────────────
+// DYNAMIC STRATEGY ENGINE
+// Returns a fully context-aware strategy object based on anomaly data.
+// Extendable: add new anomalyType cases to cover future detection patterns.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const COLOR_THEMES = {
+  red:    { bg: 'bg-red-600',    light: 'bg-red-50',    border: 'border-red-100',    text: 'text-red-700',    badge: 'bg-red-100 text-red-700',    accent: '#dc2626' },
+  orange: { bg: 'bg-orange-500', light: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-700', accent: '#f97316' },
+  blue:   { bg: 'bg-blue-600',   light: 'bg-blue-50',   border: 'border-blue-100',   text: 'text-blue-700',   badge: 'bg-blue-100 text-blue-700',   accent: '#2563eb' },
+  purple: { bg: 'bg-purple-600', light: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-700', accent: '#7c3aed' },
+  amber:  { bg: 'bg-amber-500',  light: 'bg-amber-50',  border: 'border-amber-100',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-700',  accent: '#d97706' },
 };
+
+/**
+ * getStrategyForAnomaly(anomaly)
+ * ─────────────────────────────
+ * Maps an anomaly object to a fully dynamic strategy:
+ *   { title, subtitle, color, icon, steps[] }
+ *
+ * Priority: anomalyType > derived from type+amount > fallback
+ */
+function getStrategyForAnomaly(anomaly) {
+  if (!anomaly) return null;
+
+  const { anomalyType, type, amount, category, severity, explanation } = anomaly;
+  const fmt  = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
+  const cat  = category ? `"${category}"` : 'this category';
+
+  // ── 1. HIGH_EXPENSE ────────────────────────────────────────────────────────
+  if (anomalyType === 'HIGH_EXPENSE' || (type === 'expense' && amount > 100000)) {
+    return {
+      title:    'High Expense Alert',
+      subtitle: `${fmt(amount)} exceeded the ₹1,00,000 threshold — immediate review required.`,
+      colorKey: 'red',
+      icon:     '🚨',
+      steps: [
+        {
+          icon: '🔍',
+          action: 'Verify the transaction legitimacy',
+          detail: `Pull the original invoice or receipt for this ${fmt(amount)} charge and confirm it is authorised.`,
+        },
+        {
+          icon: '📞',
+          action: 'Contact the vendor immediately',
+          detail: 'Reach out to the supplier, request a breakdown of charges, and ask for a credit note if overcharged.',
+        },
+        {
+          icon: '📊',
+          action: 'Compare against 3-month history',
+          detail: `Check whether similar ${cat} expenses were significantly lower in the prior 90 days.`,
+        },
+        {
+          icon: '💰',
+          action: 'Revise budget cap for this category',
+          detail: `Update your monthly ceiling for ${cat} and set an alert for any future amount exceeding ${fmt(amount * 0.8)}.`,
+        },
+        {
+          icon: '🔒',
+          action: 'Enforce approval workflow',
+          detail: 'Require dual-approval for any single transaction above ₹75,000 going forward to prevent recurrence.',
+        },
+      ],
+    };
+  }
+
+  // ── 2. SPIKE_PATTERN ───────────────────────────────────────────────────────
+  if (anomalyType === 'SPIKE_PATTERN') {
+    return {
+      title:    'Sudden Spending Spike',
+      subtitle: explanation || `${fmt(amount)} is significantly above your typical spending baseline.`,
+      colorKey: 'orange',
+      icon:     '📈',
+      steps: [
+        {
+          icon: '📋',
+          action: 'Identify the spike root cause',
+          detail: `Cross-reference this ${fmt(amount)} transaction with pending project milestones, contracts, or one-off events.`,
+        },
+        {
+          icon: '📉',
+          action: 'Compare with 30-day rolling average',
+          detail: 'Pull a 30-day expense report for the same category and compute the deviation percentage.',
+        },
+        {
+          icon: '🔁',
+          action: 'Check for accidental duplicate payments',
+          detail: 'Verify no duplicate invoice was processed around the same date or period.',
+        },
+        {
+          icon: '📅',
+          action: 'Plan spending smoothing',
+          detail: 'If the spike is periodic (quarterly/annual), amortise it across months in your forecast model.',
+        },
+        {
+          icon: '⚙️',
+          action: 'Update anomaly threshold',
+          detail: `If this is an expected pattern, recalibrate the ML model's baseline to avoid repeated alerts.`,
+        },
+      ],
+    };
+  }
+
+  // ── 3. INCOME_DROP ─────────────────────────────────────────────────────────
+  if (anomalyType === 'INCOME_DROP' || type === 'income') {
+    return {
+      title:    'Revenue Drop Detected',
+      subtitle: explanation || `Income of ${fmt(amount)} is below expected levels — cashflow risk identified.`,
+      colorKey: 'blue',
+      icon:     '📉',
+      steps: [
+        {
+          icon: '📋',
+          action: 'Audit outstanding receivables',
+          detail: 'Pull a list of all unpaid invoices older than 15 days and prioritise immediate follow-up.',
+        },
+        {
+          icon: '📞',
+          action: 'Follow up with key clients',
+          detail: 'Contact top-5 revenue clients directly to ensure payment schedules are on track.',
+        },
+        {
+          icon: '📈',
+          action: 'Review your sales pipeline',
+          detail: 'Identify deals at risk of delay or churn and accelerate conversion on high-probability leads.',
+        },
+        {
+          icon: '🎯',
+          action: 'Launch a short-term revenue campaign',
+          detail: 'Offer limited-time bundles or discounts to accelerate near-term cash inflows.',
+        },
+        {
+          icon: '🔄',
+          action: 'Diversify revenue sources',
+          detail: 'Evaluate adding a new income stream (subscription, retainer, affiliate) to reduce revenue concentration risk.',
+        },
+      ],
+    };
+  }
+
+  // ── 4. FREQUENT_TRANSACTIONS ───────────────────────────────────────────────
+  if (anomalyType === 'FREQUENT_TRANSACTIONS') {
+    return {
+      title:    'Unusual Transaction Frequency',
+      subtitle: `Multiple transactions detected in ${cat} within a short window — possible duplication or automation error.`,
+      colorKey: 'purple',
+      icon:     '⚡',
+      steps: [
+        {
+          icon: '🔁',
+          action: 'Scan for duplicate payments',
+          detail: `Filter all ${cat} transactions from the past 7 days and identify any with the same amount or vendor.`,
+        },
+        {
+          icon: '🤖',
+          action: 'Review automation & recurring rules',
+          detail: 'Check your payment automation (standing orders, APIs, billing tools) for misconfigured triggers.',
+        },
+        {
+          icon: '📋',
+          action: 'Audit recent transaction log',
+          detail: 'Pull a detailed ledger for the impacted category and manually verify each entry against source documents.',
+        },
+        {
+          icon: '🔒',
+          action: 'Add frequency-based spending guard',
+          detail: `Set a rule: block more than 3 transactions in ${cat} within any 72-hour period pending manual approval.`,
+        },
+        {
+          icon: '📞',
+          action: 'Contact vendor / payment processor',
+          detail: 'If a vendor-side error caused repeated charges, initiate a dispute and request refund confirmation.',
+        },
+      ],
+    };
+  }
+
+  // ── 5. UNUSUAL_CATEGORY ────────────────────────────────────────────────────
+  if (anomalyType === 'UNUSUAL_CATEGORY') {
+    return {
+      title:    'Category Deviation Detected',
+      subtitle: `A transaction of ${fmt(amount)} in ${cat} is outside your normal spending pattern.`,
+      colorKey: 'amber',
+      icon:     '🔮',
+      steps: [
+        {
+          icon: '📊',
+          action: 'Benchmark against category history',
+          detail: `Compare this ${fmt(amount)} entry in ${cat} against the same category over the last 6 months.`,
+        },
+        {
+          icon: '✅',
+          action: 'Validate business necessity',
+          detail: `Confirm with the approver that this ${cat} expense was explicitly authorised and budgeted.`,
+        },
+        {
+          icon: '🗂️',
+          action: 'Check if category is miscoded',
+          detail: 'The transaction might be correctly categorised elsewhere — verify the accounting code mapping.',
+        },
+        {
+          icon: '💰',
+          action: 'Reallocate budget if legitimate',
+          detail: `If necessary, shift budget from an underspent category to cover ${cat} without breaching overall limits.`,
+        },
+        {
+          icon: '🚦',
+          action: 'Flag category for enhanced monitoring',
+          detail: `Add ${cat} to your high-attention list so all future transactions above ${fmt(amount * 0.5)} trigger alerts.`,
+        },
+      ],
+    };
+  }
+
+  // ── Fallback (should rarely be reached) ──────────────────────────────────
+  return {
+    title:    'Financial Anomaly Detected',
+    subtitle: explanation || `An unusual pattern of ${fmt(amount)} was identified and requires review.`,
+    colorKey: type === 'income' ? 'blue' : 'red',
+    icon:     '⚠️',
+    steps: [
+      { icon: '🔍', action: 'Review the transaction',      detail: 'Verify the charge is legitimate against source documents.' },
+      { icon: '📞', action: 'Contact the relevant party', detail: 'Reach out to the vendor or client for clarification.' },
+      { icon: '📊', action: 'Compare with past patterns', detail: 'Check similar transactions over the last 90 days.' },
+      { icon: '💰', action: 'Adjust budget or forecast',  detail: 'Update projections to account for this deviation.' },
+      { icon: '✅', action: 'Implement a control',        detail: 'Add an approval gate for similar future transactions.' },
+    ],
+  };
+}
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 const Toast = ({ message, onDone }) => {
@@ -54,13 +258,12 @@ const Toast = ({ message, onDone }) => {
 };
 
 // ─── Resolution Modal ─────────────────────────────────────────────────────────
+// Calls getStrategyForAnomaly() at render time so every modal is unique.
 const ResolutionModal = ({ anomaly, onConfirm, onClose, loading }) => {
-  const strategy = STRATEGIES[anomaly?.type] || STRATEGIES.expense;
-  const colorMap = {
-    red:  { bg: 'bg-red-600',  light: 'bg-red-50',  border: 'border-red-100',  text: 'text-red-600' },
-    blue: { bg: 'bg-blue-600', light: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-600' },
-  };
-  const c = colorMap[strategy.color];
+  const strategy = getStrategyForAnomaly(anomaly);
+  if (!strategy) return null;
+
+  const theme = COLOR_THEMES[strategy.colorKey] || COLOR_THEMES.red;
 
   return (
     <div
@@ -72,34 +275,51 @@ const ResolutionModal = ({ anomaly, onConfirm, onClose, loading }) => {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className={`${c.bg} px-8 py-6 flex items-center justify-between text-white`}>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60 mb-1">Recommended Action</p>
-            <h2 className="text-2xl font-black tracking-tight">{strategy.title}</h2>
-            <p className="text-white/70 text-sm font-bold mt-1">
-              ₹{anomaly?.amount?.toLocaleString()} · {new Date(anomaly?.date).toLocaleDateString()}
-            </p>
+        <div className={`${theme.bg} px-8 py-6 text-white`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">{strategy.icon}</span>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">
+                  AI-Generated Strategy · {anomaly?.anomalyType || 'Anomaly'}
+                </p>
+              </div>
+              <h2 className="text-2xl font-black tracking-tight leading-tight">{strategy.title}</h2>
+              <p className="text-white/75 text-xs font-bold mt-2 leading-relaxed">{strategy.subtitle}</p>
+              <p className="text-white/50 text-[10px] font-black mt-2 uppercase tracking-widest">
+                {new Date(anomaly?.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+              </p>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl transition-colors mt-1 shrink-0">
+              <X size={22} />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
-            <X size={22} />
-          </button>
         </div>
 
         {/* Steps */}
-        <div className="p-8 space-y-4 max-h-[55vh] overflow-y-auto">
+        <div className="p-6 space-y-3 max-h-[50vh] overflow-y-auto">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span className={`w-1.5 h-1.5 rounded-full ${theme.bg}`} />
+            Resolution Playbook — {strategy.steps.length} Actions
+          </p>
           {strategy.steps.map((step, i) => (
-            <div key={i} className={`flex items-start gap-4 p-4 rounded-2xl ${c.light} border ${c.border}`}>
-              <div className="text-2xl shrink-0">{step.icon}</div>
-              <div>
-                <p className={`font-black text-sm ${c.text}`}>{step.action}</p>
-                <p className="text-xs font-bold text-gray-500 leading-snug mt-0.5">{step.detail}</p>
+            <div key={i} className={`flex items-start gap-4 p-4 rounded-2xl ${theme.light} border ${theme.border} transition-all hover:shadow-sm`}>
+              <div className="text-xl shrink-0 w-8 text-center">{step.icon}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${theme.badge}`}>
+                    Step {i + 1}
+                  </span>
+                  <p className={`font-black text-sm ${theme.text}`}>{step.action}</p>
+                </div>
+                <p className="text-xs font-medium text-gray-500 leading-snug">{step.detail}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="px-8 pb-8 flex gap-3">
+        <div className="px-6 pb-6 flex gap-3">
           <button onClick={onClose}
             className="flex-1 py-4 bg-gray-100 text-gray-700 font-black rounded-2xl hover:bg-gray-200 transition-colors text-sm">
             Skip for Now
@@ -185,21 +405,22 @@ const Anomaly = () => {
   // ── Confirm resolution ───────────────────────────────────────
   const handleResolve = async () => {
     if (!modal) return;
+    const anomalyId = modal.id || modal._id; // consistent id field
     setResolveLoading(true);
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `${API_URL}/api/anomaly/resolve/${modal.id}`,
+        `${API_URL}/api/anomaly/resolve/${anomalyId}`,
         { actionTaken: STRATEGIES[modal.type]?.title || 'Strategy Implemented' },
         { headers: { 'x-auth-token': token } }
       );
 
-      // Update local state
-      setResolvedIds(prev => new Set([...prev, modal.id]));
+      // Update local state — mark as resolved, do NOT remove
+      setResolvedIds(prev => new Set([...prev, anomalyId]));
       setData(prev => ({
         ...prev,
         anomalies: prev.anomalies.map(a =>
-          a.id === modal.id ? { ...a, isResolved: true } : a
+          (a.id === anomalyId || a._id === anomalyId) ? { ...a, isResolved: true } : a
         )
       }));
 
@@ -217,6 +438,16 @@ const Anomaly = () => {
   const allAnomalies    = data.anomalies || [];
   const flaggedAnomalies = allAnomalies.filter(a => a.anomaly === 1);
   const activeAnomalies  = flaggedAnomalies.filter(a => !a.isResolved);
+  const resolvedAnomalies = flaggedAnomalies.filter(a => a.isResolved);
+  const allResolved = flaggedAnomalies.length > 0 && activeAnomalies.length === 0;
+  const noAnomalies = flaggedAnomalies.length === 0;
+
+  // Dynamic insight message
+  const insightText = allResolved
+    ? 'System Stable — All anomalies resolved.'
+    : noAnomalies
+      ? 'System Stable — No unusual transactions detected.'
+      : `Unusual transactions detected — ${activeAnomalies.length} require attention.`;
 
   const getSeverityStyles = (severity) => {
     switch (severity?.toLowerCase()) {
@@ -302,7 +533,7 @@ const Anomaly = () => {
                   </h2>
                   <div className="flex flex-wrap justify-center md:justify-start gap-4">
                     <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl text-xs font-black border border-white/10">
-                      <Activity size={14} /> {activeAnomalies.length} Active · {flaggedAnomalies.length - activeAnomalies.length} Resolved
+                      <Activity size={14} /> {activeAnomalies.length} Active &middot; {resolvedAnomalies.length} Resolved
                     </div>
                     <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl text-xs font-black border border-white/10">
                       <TrendingUp size={14} /> Volatility Index: {data.riskScore}%
@@ -325,8 +556,12 @@ const Anomaly = () => {
                       <h3 className="text-lg font-black uppercase tracking-widest text-gray-900 leading-none mt-1">Real-time Trend Insight</h3>
                     </div>
                     <p className="text-2xl font-black text-gray-700 tracking-tight leading-snug">
-                      {data.trendInsight || 'Awaiting statistical baseline verification...'}
-                    </p>
+                    {allResolved
+                      ? 'System Stable — All anomalies have been resolved.'
+                      : noAnomalies
+                        ? 'No unusual transactions detected in current observation window.'
+                        : (data.trendInsight || insightText)}
+                  </p>
                   </div>
                 </div>
               </div>
@@ -406,11 +641,12 @@ const Anomaly = () => {
                         </div>
 
                         <div className="flex flex-col mb-8 text-center md:text-left">
-                          <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                            {item.type === 'expense'
-                              ? <TrendingUp className="w-4 h-4 text-red-500" />
-                              : <TrendingDown className="w-4 h-4 text-green-500" />}
-                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] leading-none">{item.type} Marker</span>
+                          <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                            {/* Strategy icon + type badge */}
+                            <span className="text-lg">{getStrategyForAnomaly(item)?.icon || '⚠️'}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-none px-2 py-1 rounded-lg bg-gray-100 text-gray-500">
+                              {item.anomalyType?.replace(/_/g, ' ') || item.type}
+                            </span>
                           </div>
                           <h3 className="text-5xl font-black text-gray-900 leading-none tracking-tighter">₹{item.amount.toLocaleString()}</h3>
                         </div>
@@ -457,16 +693,18 @@ const Anomaly = () => {
                           <p className="text-[10px] font-black text-gray-400">{new Date(item.date).toLocaleDateString()}</p>
                         </div>
                         <p className="text-3xl font-black text-gray-500 tracking-tighter">₹{item.amount.toLocaleString()}</p>
-                        <p className="text-[10px] font-black text-gray-400 uppercase mt-1">{item.type}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase mt-1">
+                          {item.anomalyType?.replace(/_/g, ' ') || item.type}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* All resolved / none state */}
-              {flaggedAnomalies.length === 0 || activeAnomalies.length === 0 ? (
-                <div className={`text-center py-32 bg-white rounded-[4rem] border-2 border-dashed ${flaggedAnomalies.length > 0 ? 'border-green-100' : 'border-gray-100'} shadow-sm relative overflow-hidden group`}>
+              {/* Empty state: show ONLY when no active anomalies (all resolved or none ever) */}
+              {(noAnomalies || allResolved) && (
+                <div className={`text-center py-32 bg-white rounded-[4rem] border-2 border-dashed ${allResolved ? 'border-green-100' : 'border-gray-100'} shadow-sm relative overflow-hidden group`}>
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] rotate-12 scale-[3] group-hover:scale-[3.5] transition-transform duration-1000">
                     <CheckCircle size={200} className="text-green-500" />
                   </div>
@@ -475,16 +713,16 @@ const Anomaly = () => {
                       <CheckCircle className="w-12 h-12 text-green-500" />
                     </div>
                     <h3 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-4">
-                      {flaggedAnomalies.length > 0 ? 'System Stable' : 'Baseline Synchronized'}
+                      {allResolved ? 'System Stable' : 'Baseline Synchronized'}
                     </h3>
                     <p className="text-gray-500 font-bold max-w-sm mx-auto leading-relaxed uppercase text-xs tracking-widest">
-                      {flaggedAnomalies.length > 0
+                      {allResolved
                         ? 'All anomalies resolved. No active risks detected.'
                         : 'No critical anomalies identified within the current observation window.'}
                     </p>
                   </div>
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
         )}

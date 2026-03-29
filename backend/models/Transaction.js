@@ -19,6 +19,10 @@ const transactionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  description: {
+    type: String,
+    default: '',
+  },
   // Operational Data (Optional)
   unitsProduced: { type: Number, default: 0 },
   itemsSold: { type: Number, default: 0 },
