@@ -6,3 +6,4 @@ gunicorn
 pdfplumber
 numpy
 requests
+python-dotenv
